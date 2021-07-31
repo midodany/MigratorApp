@@ -1,1 +1,14 @@
-<p>control-panel works!</p>
+<div class="panel-container">
+  <button mat-raised-button color="primary" [disabled]="!this.ruleChanged">
+    Save
+  </button>
+  <div class="cards">
+    <div *ngFor="let businessRule of this.businessRules" class="card shadow-1">
+      <app-option-card
+        [BusinessRule]="businessRule"
+        (onRuleChange)="this.onRuleChange()"
+      >
+      </app-option-card>
+    </div>
+  </div>
+</div>

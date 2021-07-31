@@ -1,0 +1,10 @@
+.panel-container {
+    margin: 30px;
+}
+.card {
+    position: relative;
+    height: 100px;
+    background: #fcfcfc;
+    margin: 20px 40px;
+    transition: 0.4s all;
+  }

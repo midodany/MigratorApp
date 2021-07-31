@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-
+import { ControlPanelService } from './contol-panel.service';
 @Component({
   selector: 'app-control-panel',
   templateUrl: './control-panel.component.html',
@@ -7,9 +7,21 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ControlPanelComponent implements OnInit {
 
-  constructor() { }
+  public businessRules = [];
+  public ruleChanged = false;
+
+  constructor(private controlPanelService :ControlPanelService) { }
 
   ngOnInit(): void {
+    this.controlPanelService.getConfig().subscribe(data => {
+      console.log(data);
+      this.businessRules = data;
+    })
+  }
+
+  onRuleChange():void {
+    console.log("changed");
+    this.ruleChanged = true;
   }
 
 }

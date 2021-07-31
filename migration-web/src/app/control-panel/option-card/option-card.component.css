@@ -1,0 +1,28 @@
+.example-margin {
+  margin: 0 12px;
+}
+
+.example-form {
+  min-width: 150px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.center {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  width: 100%;
+}
+
+.card-table {
+  width: 100%;
+  font-size: x-large;
+}
+
+mat-form-field {
+  margin-right: 12px;
+}

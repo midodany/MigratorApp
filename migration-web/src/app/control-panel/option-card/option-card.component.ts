@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild, NgZone } from '@angular/core';
+import {CdkTextareaAutosize} from '@angular/cdk/text-field';
+import { take } from 'rxjs/operators';
 @Component({
   selector: 'app-option-card',
   templateUrl: './option-card.component.html',
@@ -7,9 +8,32 @@ import { Component, OnInit } from '@angular/core';
 })
 export class OptionCardComponent implements OnInit {
 
-  constructor() { }
+  @Input() BusinessRule;
+  @Output() onRuleChange = new EventEmitter();
+  public EntityName;
+  @ViewChild('autosize') autosize: CdkTextareaAutosize;
+
+  triggerResize() {
+    // Wait for changes to be applied, then trigger textarea resize.
+    this._ngZone.onStable.pipe(take(1))
+        .subscribe(() => this.autosize.resizeToFitContent(true));
+  }
+  constructor(private _ngZone: NgZone) { }
 
   ngOnInit(): void {
+    this.EntityName = this.BusinessRule.EntityName;
   }
+
+  setRequired(completed: boolean) {
+    this.BusinessRule.IsRequired = completed;
+    
+    console.log(this.BusinessRule.IsRequired);
+  }
+
+  setRegEx(text: string) {
+    this.BusinessRule.RegEx = text;
+    this.onRuleChange.emit();
+  }
+  
 
 }
