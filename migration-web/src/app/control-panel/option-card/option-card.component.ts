@@ -26,8 +26,7 @@ export class OptionCardComponent implements OnInit {
 
   setRequired(completed: boolean) {
     this.BusinessRule.IsRequired = completed;
-    
-    console.log(this.BusinessRule.IsRequired);
+    this.onRuleChange.emit();
   }
 
   setRegEx(text: string) {

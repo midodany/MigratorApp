@@ -31,11 +31,50 @@ namespace BusinessRulesManager
                                RuleId = dr.Field<int?>("Id"),
                                EntityName = dr["EntityName"].ToString(),
                                PropertyName = dr["PropertyName"].ToString(),
-                               IsRequired = dr.Field<bool?>("IsRequired"),
+                               IsRequired = dr.Field<bool?>("IsRequired") ?? false,
                                RegEx = dr["RegEx"].ToString(),
                                Description = dr["Description"].ToString(),
                                Origin = dr["Origin"].ToString()
                            }).ToList();
+            return BRs;
+        }
+
+        public void SaveBusinessRules(List<BusinessRuleEntity> BusinessRules)
+        {
+            var objResult = new DataTable();
+            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
+            myCon.Open();
+
+
+
+            using var myCommand = new SqlCommand("GetBusinessRules", myCon);
+        }
+
+        private List<BusinessRuleEntity> getExistingRulesIds()
+        {
+            var objResult = new DataTable();
+            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
+            myCon.Open();
+            using var myCommand = new SqlCommand("GetBusinessRules", myCon);
+            myCommand.CommandType = CommandType.StoredProcedure;
+
+            var myReader = myCommand.ExecuteReader();
+            objResult.Load(myReader);
+
+            myReader.Close();
+            myCon.Close();
+
+            var BRs = (from DataRow dr in objResult.Rows
+                select new BusinessRuleEntity
+                {
+                    RuleId = dr.Field<int?>("Id"),
+                    EntityName = dr["EntityName"].ToString(),
+                    PropertyName = dr["PropertyName"].ToString(),
+                    IsRequired = dr.Field<bool?>("IsRequired") ?? false,
+                    RegEx = dr["RegEx"].ToString(),
+                    Description = dr["Description"].ToString(),
+                    Origin = dr["Origin"].ToString()
+                }).ToList();
             return BRs;
         }
     }

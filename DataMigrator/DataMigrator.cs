@@ -100,8 +100,6 @@ namespace DataMigrator
         {
             var reason = "";
             
-            
-
             foreach (DataRow dr in BRRows)
             {
                 

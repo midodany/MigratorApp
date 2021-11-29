@@ -1,10 +1,20 @@
 .panel-container {
-    margin: 30px;
+  margin: 30px;
 }
 .card {
-    position: relative;
-    height: 100px;
-    background: #fcfcfc;
-    margin: 20px 40px;
-    transition: 0.4s all;
-  }
+  position: relative;
+  height: 100px;
+  background: #fcfcfc;
+  margin: 20px 40px;
+  transition: 0.4s all;
+}
+.row {
+  width: 100%;
+  margin: 45px;
+  margin-bottom: 10px;
+  font-size: 25px;
+}
+.block {
+  width: 25%;
+  display: inline-block ;
+}

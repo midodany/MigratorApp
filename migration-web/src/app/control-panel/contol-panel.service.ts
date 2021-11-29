@@ -13,4 +13,7 @@ export class ControlPanelService {
   getConfig() {
     return this.http.get<any>('https://localhost:44359/api/BR/GetBusinessRules');
   }
+  saveData(data) {
+    return this.http.post<any>('https://localhost:44359/api/BR/SaveBusinessRules',data);
+  }
 }
