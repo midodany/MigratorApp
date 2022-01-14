@@ -1,34 +1,29 @@
-﻿using BusinessRulesManager;
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using BusinessRulesManager.Entities;
 
 namespace MigratorApi.Controllers
 {
     [ApiController]
-    public class BRController : Controller
+    public class BrController : Controller
     {
-        private readonly BusinessRulesManager.BusinessRulesManager _BRulesManager = new BusinessRulesManager.BusinessRulesManager();
+        private readonly BusinessRulesManager.BusinessRulesManager _bRulesManager = new BusinessRulesManager.BusinessRulesManager();
         [HttpGet]
         [Route("api/BR/GetBusinessRules")]
         public string GetBusinessRules()
         {
-            var BRs = _BRulesManager.GetBusinessRules();
-            var jsonResult = JsonConvert.SerializeObject(BRs);
+            var bRs = _bRulesManager.GetBusinessRules();
+            var jsonResult = JsonConvert.SerializeObject(bRs);
             return jsonResult;
         }
 
         [HttpPost]
         [Route("api/BR/SaveBusinessRules")]
-        public string SaveBusinessRules([FromBody] List<BusinessRuleEntity> BusinessRules)
+        public string SaveBusinessRules([FromBody] List<BusinessRuleEntity> businessRules)
         {
-            var BRs = _BRulesManager.GetBusinessRules();
-            var jsonResult = JsonConvert.SerializeObject(BRs);
+            var bRs = _bRulesManager.GetBusinessRules();
+            var jsonResult = JsonConvert.SerializeObject(bRs);
             return jsonResult;
         }
     }

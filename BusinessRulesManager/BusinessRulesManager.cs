@@ -25,7 +25,7 @@ namespace BusinessRulesManager
             myReader.Close();
             myCon.Close();
 
-            var BRs = (from DataRow dr in objResult.Rows
+            var bRs = (from DataRow dr in objResult.Rows
                            select new BusinessRuleEntity
                            {
                                RuleId = dr.Field<int?>("Id"),
@@ -36,12 +36,11 @@ namespace BusinessRulesManager
                                Description = dr["Description"].ToString(),
                                Origin = dr["Origin"].ToString()
                            }).ToList();
-            return BRs;
+            return bRs;
         }
 
-        public void SaveBusinessRules(List<BusinessRuleEntity> BusinessRules)
+        public void SaveBusinessRules(List<BusinessRuleEntity> businessRules)
         {
-            var objResult = new DataTable();
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
             myCon.Open();
 
@@ -50,7 +49,7 @@ namespace BusinessRulesManager
             using var myCommand = new SqlCommand("GetBusinessRules", myCon);
         }
 
-        private List<BusinessRuleEntity> getExistingRulesIds()
+        private List<BusinessRuleEntity> GetExistingRulesIds()
         {
             var objResult = new DataTable();
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
@@ -64,7 +63,7 @@ namespace BusinessRulesManager
             myReader.Close();
             myCon.Close();
 
-            var BRs = (from DataRow dr in objResult.Rows
+            var bRs = (from DataRow dr in objResult.Rows
                 select new BusinessRuleEntity
                 {
                     RuleId = dr.Field<int?>("Id"),
@@ -75,7 +74,7 @@ namespace BusinessRulesManager
                     Description = dr["Description"].ToString(),
                     Origin = dr["Origin"].ToString()
                 }).ToList();
-            return BRs;
+            return bRs;
         }
     }
 }

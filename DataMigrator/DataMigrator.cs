@@ -4,7 +4,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using DataMigrator.Entities;
 
@@ -96,11 +95,11 @@ namespace DataMigrator
             return validCourses;
         }
 
-        private string ValidateCourse(CourseIntermediate course, DataRowCollection BRRows)
+        private string ValidateCourse(CourseIntermediate course, DataRowCollection brRows)
         {
             var reason = "";
             
-            foreach (DataRow dr in BRRows)
+            foreach (DataRow dr in brRows)
             {
                 
                 var propertyValue = GetThePropertyValue(course, dr["PropertyName"].ToString());
@@ -125,7 +124,7 @@ namespace DataMigrator
         {
             Type type = instance.GetType();
             PropertyInfo propertyInfo = type.GetProperty(propertyName);
-            return propertyInfo != null ? propertyInfo.GetValue(instance, null).ToString() : "";
+            return propertyInfo != null ? propertyInfo.GetValue(instance, null)?.ToString() : "";
         }
 
         private void WriteCourses(List<CourseIntermediate> inputCourses)
@@ -173,16 +172,16 @@ namespace DataMigrator
 
             myCon.Close();
 
-            using var IntermediateCon =
+            using var intermediateCon =
                 new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-            IntermediateCon.Open();
+            intermediateCon.Open();
 
             foreach (var course in toBeDeletedCourses)
             {
                 var query = "UPDATE dbo.Course "+
                             "SET IsDeleted = 1 "+
                             "WHERE TargetId = " + course.TargetId;
-                using var myCommand = new SqlCommand(query, IntermediateCon);
+                using var myCommand = new SqlCommand(query, intermediateCon);
                 myCommand.ExecuteNonQuery();
             }
 
@@ -191,11 +190,11 @@ namespace DataMigrator
                 var query = "UPDATE dbo.Course " +
                             "SET TargetId = " + course.TargetId +
                             " WHERE Id = " + course.Id;
-                using var myCommand = new SqlCommand(query, IntermediateCon);
+                using var myCommand = new SqlCommand(query, intermediateCon);
                 myCommand.ExecuteNonQuery();
             }
 
-            IntermediateCon.Close();
+            intermediateCon.Close();
         }
 
     }
