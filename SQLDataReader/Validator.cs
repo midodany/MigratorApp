@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Text;
 using DataMigrator;
+using Logger;
 
 namespace SQLDataReader
 {

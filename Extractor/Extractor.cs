@@ -5,6 +5,7 @@ using System.Linq;
 using DataMigrator;
 using DataMigrator.Entities;
 using DataMigrator.Interfaces;
+using Logger;
 
 namespace Extractor
 {

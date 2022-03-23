@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Microsoft.Extensions.Configuration;
 
-namespace DataMigrator
+namespace Logger
 {
     public class ConnectionStringManager
     {

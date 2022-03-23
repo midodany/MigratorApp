@@ -6,12 +6,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using DataMigrator.Entities;
+using BusinessRulesEngine;
+using BusinessRulesEngine.Entities;
+using Logger;
 
 namespace DataMigrator
 {
     public class DataMigrator
     {
         private readonly ConnectionStringManager _connectionStringManager = new ConnectionStringManager();
+        private readonly Validation _engineValidator = new Validation();
         public void StartDataMigrator()
         {
             MigrateCourses();
@@ -51,81 +55,14 @@ namespace DataMigrator
                     ToBeDeleted = dr.Field<bool>("ToBeDeleted")
                 }).ToList();
 
-            var validCourses = ValidateCourses(courses);
+            var validCourses = _engineValidator.ValidateMigratedObjects(courses.ToList<MigratedObject>(), "Course").OfType<CourseIntermediate>().ToList();
 
             return validCourses;
         }
 
-        private List<CourseIntermediate> ValidateCourses(List<CourseIntermediate> courses)
-        {
-            var validCourses = new List<CourseIntermediate>();
+        
 
-
-            foreach (var course in courses)
-            {
-
-                var entity = "Course";
-                using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
-                var query = "SELECT Rules.Id, Name PropertyName, IsRequired, RegEx, Description " +
-                            "FROM dbo.Entity " +
-                            "INNER JOIN dbo.Property ON Property.EntityId = Entity.Id " +
-                            "INNER JOIN dbo.Rules ON Rules.PropertyId = Property.Id " +
-                            "WHERE Origin = 'Target' AND TableName = '" + entity + "'; ";
-
-                using var myCommand = new SqlCommand(query, myCon);
-                myCon.Open();
-
-                var myReader = myCommand.ExecuteReader();
-                var objResult = new DataTable();
-                objResult.Load(myReader);
-
-                var notValidReason = ValidateCourse(course, objResult.Rows);
-
-                if (notValidReason == "")
-                {
-                    validCourses.Add(course);
-                }
-                else
-                {
-                    //add to not valid courses
-                }
-
-            }
-
-            return validCourses;
-        }
-
-        private string ValidateCourse(CourseIntermediate course, DataRowCollection brRows)
-        {
-            var reason = "";
-            
-            foreach (DataRow dr in brRows)
-            {
-                
-                var propertyValue = GetThePropertyValue(course, dr["PropertyName"].ToString());
-                var isRequiredValid = !(bool) dr["IsRequired"] ||
-                                        !string.IsNullOrEmpty(propertyValue);
-                var isRegexValid = string.IsNullOrEmpty(dr["RegEx"].ToString()) ||
-                                         ValidateRegex(dr["RegEx"].ToString(), propertyValue);
-                reason += !(isRequiredValid && isRegexValid) ? dr["Description"] + "; " : "";
-            }
-
-            return reason;
-        }
-
-        private bool ValidateRegex(string strRegex, string input)
-        {
-            Regex re = new Regex(strRegex);
-
-            return (input != null && re.IsMatch(input));
-        }
-
-        private string GetThePropertyValue(object instance, string propertyName)
-        {
-            Type type = instance.GetType();
-            PropertyInfo propertyInfo = type.GetProperty(propertyName);
-            return propertyInfo != null ? propertyInfo.GetValue(instance, null)?.ToString() : "";
-        }
+        
 
         private void WriteCourses(List<CourseIntermediate> inputCourses)
         {

@@ -5,6 +5,7 @@ using System.Linq;
 using DataMigrator;
 using DataMigrator.Entities;
 using DataMigrator.Interfaces;
+using Logger;
 using SQLDataReader.Entities;
 
 namespace SQLDataReader
@@ -21,7 +22,8 @@ namespace SQLDataReader
             var objResult = new DataTable();
             var query = "SELECT Id, Title, Description, TeacherId " +
                                 "FROM dbo.Subject ";
-            query += "WHERE " + validatorEntity.WhereClause;
+            if(!string.IsNullOrEmpty(validatorEntity.WhereClause))
+                query += "WHERE " + validatorEntity.WhereClause;
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("DataSourceConnectionString"));
             myCon.Open();
             using var myCommand = new SqlCommand(query, myCon);

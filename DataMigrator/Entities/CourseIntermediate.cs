@@ -1,6 +1,8 @@
-﻿namespace DataMigrator.Entities
+﻿using BusinessRulesEngine.Entities;
+
+namespace DataMigrator.Entities
 {
-    public class CourseIntermediate
+    public class CourseIntermediate : MigratedObject
     {
         public int Id { set; get; }
         public string Title { set; get; }
