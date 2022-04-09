@@ -1,29 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using BusinessRulesEngine.Entities;
-using NRules.Fluent.Dsl;
-using Rule = NRules.Fluent.Dsl.Rule;
 
 namespace BusinessRulesEngine.Rules
 {
-    public class IsRequiredRule : Rule
+    internal class IsRequiredRule : RuleMaster
     {
-        public override void Define()
+        internal override void Apply(List<MigratedObject> migratedObjects, DataRowCollection brRows)
         {
-            MigratedObject migratedObject = default;
-            DataRow brRow = default;
-
-            When()
-                .Match<MigratedObject>(() => migratedObject)
-                .Match<DataRow>(() => brRow, b => (bool)b["IsRequired"], b => string.IsNullOrEmpty(
-                    CommonFunctions.GetThePropertyValue(migratedObject, b["PropertyName"].ToString())));
-
-            Then()
-                .Do(ctx => migratedObject.validationMessage.Add("Required Field not found: " + brRow["PropertyName"]));
-            
-            
+            int RuleId;
+            foreach (DataRow brRow in brRows)
+            {
+                foreach (var migratedObject in migratedObjects)
+                {
+                    string propertyValue =
+                        CommonFunctions.GetThePropertyValue(migratedObject, brRow["PropertyName"].ToString());
+                    if ((bool)brRow["IsRequired"] && string.IsNullOrEmpty(propertyValue))
+                    {
+                        int.TryParse(brRow["RuleId"].ToString(), out RuleId);
+                        migratedObject.validationLogs.Add(new ValidationLog{ objectId = migratedObject.Id, ruleId = RuleId, validationMessage = "RuleId: " + brRow["RuleId"] + ". Required Field not found: " + brRow["PropertyName"] });
+                    }
+                }
+            }
         }
     }
 }

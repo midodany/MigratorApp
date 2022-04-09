@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BusinessRulesEngine;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MigratorApi.Controllers
 {
@@ -12,8 +13,10 @@ namespace MigratorApi.Controllers
         [Route("api/Migrator/RunMigration")]
         public void RunMigration()
         {
+            BatchManager batchManager = new BatchManager();
+
             _extractor.StartExtractor();
-            _dataMigrator.StartDataMigrator();
+            _dataMigrator.StartDataMigrator(batchManager.CreateNewBatch());
         }
     }
 }

@@ -16,20 +16,20 @@ namespace DataMigrator
     {
         private readonly ConnectionStringManager _connectionStringManager = new ConnectionStringManager();
         private readonly Validation _engineValidator = new Validation();
-        public void StartDataMigrator()
+        public void StartDataMigrator(string BatchId)
         {
-            MigrateCourses();
+            MigrateCourses(BatchId);
         }
 
-        private void MigrateCourses()
+        private void MigrateCourses(string BatchId)
         {
-            var courseIntermediate = GetIntermediateCourses();
+            var courseIntermediate = GetIntermediateCourses(BatchId);
             WriteCourses(courseIntermediate);
         }
 
 
 
-        private List<CourseIntermediate> GetIntermediateCourses()
+        private List<CourseIntermediate> GetIntermediateCourses(string BatchId)
         {
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
             var query = "SELECT Id, Title, Description, ExternalId, TargetId, ToBeDeleted " +
@@ -55,14 +55,25 @@ namespace DataMigrator
                     ToBeDeleted = dr.Field<bool>("ToBeDeleted")
                 }).ToList();
 
-            var validCourses = _engineValidator.ValidateMigratedObjects(courses.ToList<MigratedObject>(), "Course").OfType<CourseIntermediate>().ToList();
+            var ValidatedCourses = _engineValidator.ValidateMigratedObjects(courses.ToList<MigratedObject>(), "Course",DomainEnum.Target);
 
-            return validCourses;
+            var acceptedCourses = ApplyFilter(BatchId,ValidatedCourses);
+
+            return acceptedCourses.OfType<CourseIntermediate>().ToList();
         }
 
-        
+        private List<MigratedObject> ApplyFilter(string BatchId, List<MigratedObject> migratedObjects)
+        {
+            var rejectedObjects = migratedObjects.Where(c => c.validationLogs.Count > 0).ToList();
 
-        
+            var validationLogs = rejectedObjects.SelectMany(v => v.validationLogs)
+                .Select(vl => new LogObject { objectId = vl.objectId, RuleId = vl.ruleId, ValidationMessage = vl.validationMessage })
+                .ToList();
+
+            Logger.Logger.Log(BatchId, "Target", validationLogs);
+
+            return migratedObjects.Where(c => c.validationLogs.Count == 0).ToList();
+        }
 
         private void WriteCourses(List<CourseIntermediate> inputCourses)
         {
