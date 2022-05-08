@@ -23,5 +23,15 @@ namespace BusinessRulesEngine
 
             return BatchId;
         }
+
+        public void FinishBatch(string BatchId)
+        {
+            using var myCon =
+                new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
+            myCon.Open();
+            var query = "UPDATE dbo.Batch SET FinishedSuccessfully = 1 WHERE BatchId =  '" + BatchId + "';";
+            using var myCommand = new SqlCommand(query, myCon);
+            myCommand.ExecuteNonQuery();
+        }
     }
 }

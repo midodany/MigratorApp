@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using BusinessRulesEngine;
+using BusinessRulesEngine.Entities;
 using DataMigrator;
 using DataMigrator.Entities;
 using DataMigrator.Interfaces;
@@ -13,21 +16,29 @@ namespace Extractor
     {
         private readonly ConnectionStringManager _connectionStringManager = new ConnectionStringManager();
         private readonly IDataExtractor _dataReader = new SQLDataReader.SqlDataReader();
+        private readonly Validation _engineValidator = new Validation();
 
-        public void StartExtractor()
+        public void StartExtractor(String BatchId)
         {
-            ExtractCourses();
+            ExtractCourses(BatchId);
         }
 
-        private void ExtractCourses()
+        private void ExtractCourses(String BatchId)
         {
-            var courseIntermediate = GetCourses();
+            var courseIntermediate = GetCourses(BatchId);
             WriteCourses(courseIntermediate);
         }
 
-        private List<CourseIntermediate> GetCourses()
+        private List<CourseIntermediate> GetCourses(String BatchId)
         {
-            return _dataReader.GetCourses();
+            var sourceCourses = _dataReader.GetCourses();
+
+            var ValidatedCourses = _engineValidator.ValidateMigratedObjects(sourceCourses.ToList<MigratedObject>(), "Subject", DomainEnum.Source);
+
+            var acceptedCourses = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedCourses);
+
+            return acceptedCourses.OfType<CourseIntermediate>().ToList();
+
         }
 
         private void WriteCourses(List<CourseIntermediate> courses)

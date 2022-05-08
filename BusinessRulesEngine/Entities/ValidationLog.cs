@@ -6,7 +6,7 @@ namespace BusinessRulesEngine.Entities
 {
     public class ValidationLog
     {
-        public int objectId { set; get; }
+        public string objectId { set; get; }
         public int ruleId { set; get; }
         public string validationMessage { set; get; }
     }

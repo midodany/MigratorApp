@@ -6,7 +6,7 @@ namespace Logger
 {
     public  class LogObject
     {
-        public int objectId { set; get; }
+        public string objectId { set; get; }
         public int RuleId { set; get; }
         public string ValidationMessage { set; get; }
     }

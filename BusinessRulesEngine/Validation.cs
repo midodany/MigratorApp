@@ -23,7 +23,7 @@ namespace BusinessRulesEngine
                         "FROM dbo.Entity " +
                         "INNER JOIN dbo.Property ON Property.EntityId = Entity.Id " +
                         "INNER JOIN dbo.Rules ON Rules.PropertyId = Property.Id " +
-                        "WHERE Origin = '" + domainEnum.ToString() + "' AND TableName = '" + entity + "'; ";
+                        "WHERE Rules.IsActive = 1 AND Origin = '" + domainEnum.ToString() + "' AND TableName = '" + entity + "'; ";
 
             using var myCommand = new SqlCommand(query, myCon);
             myCon.Open();

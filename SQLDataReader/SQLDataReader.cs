@@ -36,6 +36,7 @@ namespace SQLDataReader
             var courses = (from DataRow dr in objResult.Rows
                 select new CourseIntermediate
                 {
+                    MigrationId = dr["Id"].ToString(),
                     Title = dr["Title"].ToString(),
                     Description = dr["Description"].ToString(),
                     ExternalId = dr["Id"].ToString()

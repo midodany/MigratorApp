@@ -14,9 +14,11 @@ namespace MigratorApi.Controllers
         public void RunMigration()
         {
             BatchManager batchManager = new BatchManager();
+            string batchId = batchManager.CreateNewBatch();
 
-            _extractor.StartExtractor();
-            _dataMigrator.StartDataMigrator(batchManager.CreateNewBatch());
+            _extractor.StartExtractor(batchId);
+            _dataMigrator.StartDataMigrator(batchId);
+            batchManager.FinishBatch(batchId);
         }
     }
 }

@@ -4,6 +4,7 @@ namespace DataMigrator.Entities
 {
     public class CourseIntermediate : MigratedObject
     {
+        public int? Id { get; set; }
         public string Title { set; get; }
         public string Description { set; get; }
         public string ExternalId { set; get; }

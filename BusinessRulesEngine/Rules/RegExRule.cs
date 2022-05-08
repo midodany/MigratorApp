@@ -20,7 +20,7 @@ namespace BusinessRulesEngine.Rules
                         !ValidateRegex(brRow["RegEx"].ToString(), propertyValue))
                     {
                         int.TryParse(brRow["RuleId"].ToString(), out RuleId);
-                        migratedObject.validationLogs.Add(new ValidationLog{objectId = migratedObject.Id, ruleId = RuleId, validationMessage = "RuleId: " + brRow["RuleId"] + ". Regular Expression not correct: " + brRow["PropertyName"]});
+                        migratedObject.validationLogs.Add(new ValidationLog{objectId = migratedObject.MigrationId, ruleId = RuleId, validationMessage = "Regular Expression Rule violated. Description: " + brRow["Description"] });
                     }
                 }
             }

@@ -47,7 +47,8 @@ namespace DataMigrator
             var courses = (from DataRow dr in objResult.Rows
                 select new CourseIntermediate
                 {
-                    Id = dr.Field<int>("Id"),
+                    MigrationId = dr["ExternalId"].ToString(),
+                    Id = dr.Field<int?>("Id"),
                     Title = dr["Title"].ToString(),
                     Description = dr["Description"].ToString(),
                     ExternalId = dr["ExternalId"].ToString(),
@@ -57,24 +58,11 @@ namespace DataMigrator
 
             var ValidatedCourses = _engineValidator.ValidateMigratedObjects(courses.ToList<MigratedObject>(), "Course",DomainEnum.Target);
 
-            var acceptedCourses = ApplyFilter(BatchId,ValidatedCourses);
+            var acceptedCourses = CommonFunctions.ApplyFilter(BatchId,DomainEnum.Target,ValidatedCourses);
 
             return acceptedCourses.OfType<CourseIntermediate>().ToList();
         }
-
-        private List<MigratedObject> ApplyFilter(string BatchId, List<MigratedObject> migratedObjects)
-        {
-            var rejectedObjects = migratedObjects.Where(c => c.validationLogs.Count > 0).ToList();
-
-            var validationLogs = rejectedObjects.SelectMany(v => v.validationLogs)
-                .Select(vl => new LogObject { objectId = vl.objectId, RuleId = vl.ruleId, ValidationMessage = vl.validationMessage })
-                .ToList();
-
-            Logger.Logger.Log(BatchId, "Target", validationLogs);
-
-            return migratedObjects.Where(c => c.validationLogs.Count == 0).ToList();
-        }
-
+        
         private void WriteCourses(List<CourseIntermediate> inputCourses)
         {
             var toBeDeletedCourses = inputCourses.Where(c => c.ToBeDeleted && c.TargetId != null).ToList();
