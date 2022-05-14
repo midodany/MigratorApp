@@ -7,7 +7,23 @@
   >
     Save
   </button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="router.navigate(['/NewRule']);"
+  >
+    New Rule
+  </button>
   <div class="row">
+    <div class="block">
+      <label>
+        Origin:
+        <select [(ngModel)]="selectedValue" (change)="onOriginChange()">
+          <option *ngFor="let o of origins" [ngValue]="o">{{o.name}}</option>
+        </select>
+      </label>
+      
+    </div>
     <div class="block">
       <label>
         Entity:

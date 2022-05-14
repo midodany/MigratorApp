@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { ControlPanelService } from './contol-panel.service';
+import { ControlPanelService } from './control-panel.service';
+import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-control-panel',
   templateUrl: './control-panel.component.html',
@@ -11,17 +13,29 @@ export class ControlPanelComponent implements OnInit {
   public ruleChanged = false;
   public entityFilter = "";
   public propertyFilter = "";
+  public selectedValue = null;
+  origins = [
+    {id:1, name: 'Source'},
+    {id:2, name: 'Target'}
+  ]
 
-  constructor(private controlPanelService :ControlPanelService) { }
+  constructor(private controlPanelService :ControlPanelService, public router: Router) { }
 
   ngOnInit(): void {
-    this.controlPanelService.getConfig().subscribe(data => {
+    this.selectedValue = this.origins[0];
+    this.controlPanelService.getConfig(this.selectedValue.name).subscribe(data => {
       this.businessRules = data;
     })
   }
 
+  onOriginChange():void {
+    this.controlPanelService.getConfig(this.selectedValue.name).subscribe(data => {
+      this.businessRules = data;
+      this.ruleChanged = false;
+    })
+  }
+
   onRuleChange():void {
-    console.log(this.businessRules);
     this.ruleChanged = true;
   }
 

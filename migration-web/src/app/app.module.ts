@@ -1,5 +1,6 @@
 import { BrowserModule } from "@angular/platform-browser";
 import { NgModule } from "@angular/core";
+import { Routes } from "@angular/router";
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -12,9 +13,15 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { NewRuleComponent } from './new-rule/new-rule.component';
+
+
+const appRoutes: Routes = [
+  
+];
 
 @NgModule({
-  declarations: [AppComponent, ControlPanelComponent, OptionCardComponent, FilterBR],
+  declarations: [AppComponent, ControlPanelComponent, NewRuleComponent, OptionCardComponent, FilterBR, NewRuleComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,

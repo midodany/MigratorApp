@@ -29,6 +29,11 @@ export class OptionCardComponent implements OnInit {
     this.onRuleChange.emit();
   }
 
+  setActive(completed: boolean) {
+    this.BusinessRule.IsActive = completed;
+    this.onRuleChange.emit();
+  }
+
   setRegEx(text: string) {
     this.BusinessRule.RegEx = text;
     this.onRuleChange.emit();

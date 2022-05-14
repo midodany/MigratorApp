@@ -11,7 +11,7 @@ namespace BusinessRulesManager
     public class BusinessRulesManager
     {
         private readonly ConnectionStringManager _connectionStringManager = new ConnectionStringManager();
-        public List<BusinessRuleEntity> GetBusinessRules()
+        public List<BusinessRuleEntity> GetBusinessRules(string origin)
         {
 
             var objResult = new DataTable();
@@ -19,6 +19,8 @@ namespace BusinessRulesManager
             myCon.Open();
             using var myCommand = new SqlCommand("GetBusinessRules", myCon);
             myCommand.CommandType = CommandType.StoredProcedure;
+            
+            myCommand.Parameters.Add("@Origin", SqlDbType.NVarChar).Value = origin;
 
             var myReader = myCommand.ExecuteReader();
             objResult.Load(myReader);
@@ -35,7 +37,8 @@ namespace BusinessRulesManager
                                IsRequired = dr.Field<bool?>("IsRequired") ?? false,
                                RegEx = dr["RegEx"].ToString(),
                                Description = dr["Description"].ToString(),
-                               Origin = dr["Origin"].ToString()
+                               Origin = dr["Origin"].ToString(),
+                               IsActive = dr.Field<bool?>("IsActive") ?? false
                            }).ToList();
             return bRs;
         }
