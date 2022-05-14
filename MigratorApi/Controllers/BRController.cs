@@ -17,6 +17,15 @@ namespace MigratorApi.Controllers
             var jsonResult = JsonConvert.SerializeObject(bRs);
             return jsonResult;
         }
+        
+        [HttpGet]
+        [Route("api/BR/GetInActiveBusinessRules")]
+        public string GetInActiveBusinessRules(string origin)
+        {
+            var bRs = _bRulesManager.GetInActiveBusinessRules(origin);
+            var jsonResult = JsonConvert.SerializeObject(bRs);
+            return jsonResult;
+        }
 
         [HttpPost]
         [Route("api/BR/SaveBusinessRules")]

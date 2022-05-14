@@ -18,7 +18,7 @@ namespace BusinessRulesEngine.Rules
                     if ((bool)brRow["IsRequired"] && string.IsNullOrEmpty(propertyValue))
                     {
                         int.TryParse(brRow["RuleId"].ToString(), out RuleId);
-                        migratedObject.validationLogs.Add(new ValidationLog{ objectId = migratedObject.MigrationId, ruleId = RuleId, validationMessage = "Required Rule violated. Description: " + brRow["Description"] });
+                        migratedObject.ValidationLogs.Add(new ValidationLog{ objectId = migratedObject.MigrationId, ruleId = RuleId, validationMessage = "Required Rule violated. Description: " + brRow["Description"] });
                     }
                 }
             }

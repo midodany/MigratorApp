@@ -20,15 +20,15 @@ namespace BusinessRulesEngine
 
         public static List<MigratedObject> ApplyFilter(string BatchId,DomainEnum domainEnum, List<MigratedObject> migratedObjects)
         {
-            var rejectedObjects = migratedObjects.Where(c => c.validationLogs.Count > 0).ToList();
+            var rejectedObjects = migratedObjects.Where(c => c.ValidationLogs.Count > 0).ToList();
 
-            var validationLogs = rejectedObjects.SelectMany(v => v.validationLogs)
+            var validationLogs = rejectedObjects.SelectMany(v => v.ValidationLogs)
                 .Select(vl => new LogObject { objectId = vl.objectId, RuleId = vl.ruleId, ValidationMessage = vl.validationMessage })
                 .ToList();
 
             Logger.Logger.Log(BatchId, domainEnum.ToString(), validationLogs);
 
-            return migratedObjects.Where(c => c.validationLogs.Count == 0).ToList();
+            return migratedObjects.Where(c => c.ValidationLogs.Count == 0).ToList();
         }
     }
 }

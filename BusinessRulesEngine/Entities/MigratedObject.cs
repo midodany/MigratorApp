@@ -7,6 +7,6 @@ namespace BusinessRulesEngine.Entities
     public abstract class MigratedObject
     {
         public string MigrationId { get; set; }
-        public List<ValidationLog> validationLogs = new List<ValidationLog>();
+        public readonly List<ValidationLog> ValidationLogs = new List<ValidationLog>();
     }
 }

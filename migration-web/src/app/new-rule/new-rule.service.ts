@@ -9,7 +9,7 @@ export class NewRuleService {
   constructor(private http: HttpClient) { }
 
   getConfig(origin: string) {
-    const url = 'https://localhost:44359/api/BR/GetBusinessRules';
+    const url = 'https://localhost:44359/api/BR/GetInActiveBusinessRules';
     let queryParams = new HttpParams();
     queryParams = queryParams.append("origin",origin);
     return this.http.get<any>(url,{params:queryParams});

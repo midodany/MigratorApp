@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { NewRuleService } from './new-rule.service';
 
 @Component({
@@ -18,7 +19,7 @@ export class NewRuleComponent implements OnInit {
     {id:2, name: 'Target'}
   ]
 
-  constructor(private newRuleService :NewRuleService) { }
+  constructor(private newRuleService :NewRuleService, public router: Router) { }
 
   ngOnInit(): void {
     this.selectedValue = this.origins[0];
