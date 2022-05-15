@@ -7,7 +7,10 @@ namespace Logger
     public  class LogObject
     {
         public string objectId { set; get; }
-        public int RuleId { set; get; }
+        public int? RuleId { set; get; }
         public string ValidationMessage { set; get; }
+        public string Domain { set; get; }
+        public  string TableName { set; get; }
+        public  string PropertyName { set; get; }
     }
 }

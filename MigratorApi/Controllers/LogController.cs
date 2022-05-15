@@ -17,5 +17,14 @@ namespace MigratorApi.Controllers
             var jsonResult = JsonConvert.SerializeObject(batchs);
             return jsonResult;
         }
+
+        [HttpGet]
+        [Route("api/Log/GetLogObjects")]
+        public string GetLogObjects(string batchId)
+        {
+            var logObjects = Logger.Logger.GetLogObjects(batchId);
+            var jsonResult = JsonConvert.SerializeObject(logObjects);
+            return jsonResult;
+        }
     }
 }

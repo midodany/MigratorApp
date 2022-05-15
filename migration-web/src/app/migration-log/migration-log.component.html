@@ -1,0 +1,78 @@
+<div class="panel-container">
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="router.navigate(['/ActiveRules'])"
+  >
+    Rules
+  </button>
+
+  <div class="row">
+    <div class="block">
+      <label>
+        Origin:
+        <select [(ngModel)]="selectedValue" (change)="onBatchChange()">
+          <option *ngFor="let b of batches" [ngValue]="b">
+            {{ b.BatchId + " : " + b.StartRunTime }}
+          </option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="example-header">
+    <mat-form-field>
+      <input
+        matInput
+        (keyup)="applyFilter($event.target.value)"
+        placeholder="Filter"
+      />
+    </mat-form-field>
+  </div>
+
+  <div class="example-container mat-elevation-z8">
+    <mat-table [dataSource]="dataSource" matSort>
+      <ng-container matColumnDef="Domain">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>
+          Domain
+        </mat-header-cell>
+        <mat-cell *matCellDef="let row"> {{ row.Domain }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="objectId">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>
+          Object Id
+        </mat-header-cell>
+        <mat-cell *matCellDef="let row"> {{ row.objectId }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="TableName">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>
+          Table Name
+        </mat-header-cell>
+        <mat-cell *matCellDef="let row"> {{ row.TableName }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="PropertyName">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>
+          Property Name
+        </mat-header-cell>
+        <mat-cell *matCellDef="let row"> {{ row.PropertyName }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="ValidationMessage">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>
+          ValidationMessage
+        </mat-header-cell>
+        <mat-cell *matCellDef="let row">
+          {{ row.ValidationMessage }}
+        </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns"> </mat-row>
+    </mat-table>
+
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]"></mat-paginator>
+  </div>
+</div>

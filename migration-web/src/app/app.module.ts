@@ -13,15 +13,23 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { NewRuleComponent } from './new-rule/new-rule.component';
+import { NewRuleComponent } from "./new-rule/new-rule.component";
+import { MigrationLogComponent } from "./migration-log/migration-log.component";
+import { MatTableModule } from "@angular/material/table";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatSort, MatSortModule } from "@angular/material/sort";
 
-
-const appRoutes: Routes = [
-  
-];
+const appRoutes: Routes = [];
 
 @NgModule({
-  declarations: [AppComponent, ControlPanelComponent, NewRuleComponent, OptionCardComponent, FilterBR, NewRuleComponent],
+  declarations: [
+    AppComponent,
+    ControlPanelComponent,
+    OptionCardComponent,
+    FilterBR,
+    NewRuleComponent,
+    MigrationLogComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -31,6 +39,9 @@ const appRoutes: Routes = [
     MatInputModule,
     FormsModule,
     MatButtonModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

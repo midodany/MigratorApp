@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Logger
@@ -52,5 +53,35 @@ namespace Logger
             con.Close();
 
         }
+
+        public static List<LogObject> GetLogObjects(string batchId)
+        {
+            var objResult = new DataTable();
+            using var myCon = new SqlConnection(ConnectionStringManager.GetConnectionString("BRSourceConnectionString"));
+            myCon.Open();
+            using var myCommand = new SqlCommand("GetLogWithBatchId", myCon);
+            myCommand.CommandType = CommandType.StoredProcedure;
+            
+            myCommand.Parameters.Add("@BatchId", SqlDbType.NVarChar).Value = batchId;
+            
+            var myReader = myCommand.ExecuteReader();
+            objResult.Load(myReader);
+
+            myReader.Close();
+            myCon.Close();
+
+            var batches = (from DataRow dr in objResult.Rows
+                select new LogObject
+                {
+                    RuleId = dr.Field<int?>("RuleId"),
+                    Domain = dr["Domain"].ToString(),
+                    ValidationMessage = dr["ValidationMessage"].ToString(),
+                    TableName = dr["TableName"].ToString(),
+                    PropertyName = dr["PropertyName"].ToString(),
+                    objectId = dr["objectId"].ToString()
+                }).ToList();
+            return batches;
+        }
+
     }
 }
