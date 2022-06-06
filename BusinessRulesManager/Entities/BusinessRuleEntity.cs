@@ -10,6 +10,7 @@
         public string? RegEx { set; get; }
         public string? Description { set; get; }
         public string Origin { set; get; }
+        public int? PropertyId { set; get; }
 
     }
 }

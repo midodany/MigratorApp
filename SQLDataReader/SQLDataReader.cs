@@ -18,12 +18,11 @@ namespace SQLDataReader
         public List<CourseIntermediate> GetCourses()
         {
             var entitiesToValidate = new List<string> { EntitiesEnum.Subject };
-            var validatorEntity = _validator.GetValidatorQuery(entitiesToValidate);
+            
             var objResult = new DataTable();
             var query = "SELECT Id, Title, Description, TeacherId " +
                                 "FROM dbo.Subject ";
-            if(!string.IsNullOrEmpty(validatorEntity.WhereClause))
-                query += "WHERE " + validatorEntity.WhereClause;
+            
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("DataSourceConnectionString"));
             myCon.Open();
             using var myCommand = new SqlCommand(query, myCon);

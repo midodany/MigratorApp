@@ -38,6 +38,11 @@ export class OptionCardComponent implements OnInit {
     this.BusinessRule.RegEx = text;
     this.onRuleChange.emit();
   }
+
+  setDescription(text: string) {
+    this.BusinessRule.Description = text;
+    this.onRuleChange.emit();
+  }
   
 
 }

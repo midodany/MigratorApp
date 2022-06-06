@@ -31,8 +31,8 @@ namespace MigratorApi.Controllers
         [Route("api/BR/SaveBusinessRules")]
         public string SaveBusinessRules([FromBody] List<BusinessRuleEntity> businessRules)
         {
-            var bRs = _bRulesManager.GetBusinessRules("Source");
-            var jsonResult = JsonConvert.SerializeObject(bRs);
+            _bRulesManager.SaveBusinessRules(businessRules);
+            var jsonResult = "Ok";
             return jsonResult;
         }
     }

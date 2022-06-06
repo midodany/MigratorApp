@@ -38,7 +38,8 @@ namespace BusinessRulesManager
                                RegEx = dr["RegEx"].ToString(),
                                Description = dr["Description"].ToString(),
                                Origin = dr["Origin"].ToString(),
-                               IsActive = dr.Field<bool?>("IsActive") ?? false
+                               IsActive = dr.Field<bool?>("IsActive") ?? false,
+                               PropertyId = dr.Field<int?>("PropertyId")
                            }).ToList();
             return bRs;
         }
@@ -70,19 +71,39 @@ namespace BusinessRulesManager
                     RegEx = dr["RegEx"].ToString(),
                     Description = dr["Description"].ToString(),
                     Origin = dr["Origin"].ToString(),
-                    IsActive = dr.Field<bool?>("IsActive") ?? false
+                    IsActive = dr.Field<bool?>("IsActive") ?? false,
+                    PropertyId = dr.Field<int?>("PropertyId")
                 }).ToList();
             return bRs;
         }
 
         public void SaveBusinessRules(List<BusinessRuleEntity> businessRules)
         {
-            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
-            myCon.Open();
+            foreach (var businessRuleEntity in businessRules)
+            {
+                using var myCon =
+                    new SqlConnection(_connectionStringManager.GetConnectionString("BRSourceConnectionString"));
+
+                using var myCommand = new SqlCommand("AddAdjustBusinessRule", myCon);
+                {
+
+                    myCommand.CommandType = CommandType.StoredProcedure;
+
+                    myCommand.Parameters.Add("@RuleId", SqlDbType.VarChar).Value = businessRuleEntity.RuleId;
+                    myCommand.Parameters.Add("@PropertyId", SqlDbType.VarChar).Value = businessRuleEntity.PropertyId;
+                    myCommand.Parameters.Add("@IsRequired", SqlDbType.VarChar).Value = businessRuleEntity.IsRequired;
+                    myCommand.Parameters.Add("@RegEx", SqlDbType.VarChar).Value = businessRuleEntity.RegEx;
+                    myCommand.Parameters.Add("@Description", SqlDbType.VarChar).Value = businessRuleEntity.Description;
+                    myCommand.Parameters.Add("@IsActive", SqlDbType.VarChar).Value = businessRuleEntity.IsActive;
 
 
+                    myCon.Open();
+                    myCommand.ExecuteNonQuery();
+                    myCon.Close();
+                }
 
-            using var myCommand = new SqlCommand("GetBusinessRules", myCon);
+            }
+
         }
 
         private List<BusinessRuleEntity> GetExistingRulesIds()
