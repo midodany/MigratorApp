@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataMigrator\DataMigrator.csproj" />
+    <ProjectReference Include="..\ExtractorRepo\ExtractorRepo.csproj" />
     <ProjectReference Include="..\SQLDataReader\SQLDataReader.csproj" />
   </ItemGroup>
 

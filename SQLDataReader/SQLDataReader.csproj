@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataMigrator\DataMigrator.csproj" />
+    <ProjectReference Include="..\ExtractorRepo\ExtractorRepo.csproj" />
   </ItemGroup>
 
 </Project>

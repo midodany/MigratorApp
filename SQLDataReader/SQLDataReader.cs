@@ -1,26 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using DataMigrator;
 using DataMigrator.Entities;
-using DataMigrator.Interfaces;
+using ExtractorRepo;
+using ExtractorRepo.Entities;
 using Logger;
-using SQLDataReader.Entities;
 
 namespace SQLDataReader
 {
     public class SqlDataReader : IDataExtractor
     {
         private readonly ConnectionStringManager _connectionStringManager = new ConnectionStringManager();
-        private readonly Validator _validator = new Validator();
 
-        public List<CourseIntermediate> GetCourses()
+        public List<Subject> GetCourses()
         {
-            var entitiesToValidate = new List<string> { EntitiesEnum.Subject };
-            
             var objResult = new DataTable();
-            var query = "SELECT Id, Title, Description, TeacherId " +
+            var query = "SELECT Id, Title, Description " +
                                 "FROM dbo.Subject ";
             
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("DataSourceConnectionString"));
@@ -33,7 +31,7 @@ namespace SQLDataReader
             myCon.Close();
 
             var courses = (from DataRow dr in objResult.Rows
-                select new CourseIntermediate
+                select new Subject
                 {
                     MigrationId = dr["Id"].ToString(),
                     Title = dr["Title"].ToString(),
@@ -41,6 +39,37 @@ namespace SQLDataReader
                     ExternalId = dr["Id"].ToString()
                 }).ToList();
             return courses;
+        }
+
+        public List<Teacher> GetTeachers()
+        {
+            var objResult = new DataTable();
+            var query = "SELECT Id, NationalId, Name, BirthDate, Gender  " +
+                        "FROM dbo.Teacher ";
+
+            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("DataSourceConnectionString"));
+            myCon.Open();
+            using var myCommand = new SqlCommand(query, myCon);
+            var myReader = myCommand.ExecuteReader();
+            objResult.Load(myReader);
+
+            myReader.Close();
+            myCon.Close();
+
+            DateTime birthDate
+                
+                ;
+
+            var teachers = (from DataRow dr in objResult.Rows
+                select new Teacher()
+                {
+                    MigrationId = dr["Id"].ToString(),
+                    NationalId = dr["NationalId"].ToString(),
+                    Name = dr["Name"].ToString(),
+                    BirthDate = DateTime.TryParse(dr["BirthDate"].ToString(),out birthDate) ? birthDate:DateTime.MinValue,
+                    ExternalId = dr["Id"].ToString()
+                }).ToList();
+            return teachers;
         }
     }
 }

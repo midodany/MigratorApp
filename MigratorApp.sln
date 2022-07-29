@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31410.223
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MigratorApi", "MigratorApi\MigratorApi.csproj", "{B0B33FA4-DB2C-4E7B-9C50-58E40F082713}"
 EndProject
@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLDataReader", "SQLDataRea
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessRulesManager", "BusinessRulesManager\BusinessRulesManager.csproj", "{C86A8685-CC50-4327-9CC3-4CE2B9244734}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessRulesEngine", "BusinessRulesEngine\BusinessRulesEngine.csproj", "{D929C14C-C690-46F5-933C-56D85B2B6522}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessRulesEngine", "BusinessRulesEngine\BusinessRulesEngine.csproj", "{D929C14C-C690-46F5-933C-56D85B2B6522}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtractorRepo", "ExtractorRepo\ExtractorRepo.csproj", "{DEC38E09-B975-4606-915F-F2AC2C13BAD6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{D929C14C-C690-46F5-933C-56D85B2B6522}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D929C14C-C690-46F5-933C-56D85B2B6522}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D929C14C-C690-46F5-933C-56D85B2B6522}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEC38E09-B975-4606-915F-F2AC2C13BAD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEC38E09-B975-4606-915F-F2AC2C13BAD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEC38E09-B975-4606-915F-F2AC2C13BAD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEC38E09-B975-4606-915F-F2AC2C13BAD6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

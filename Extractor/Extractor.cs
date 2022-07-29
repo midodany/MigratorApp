@@ -7,7 +7,8 @@ using BusinessRulesEngine;
 using BusinessRulesEngine.Entities;
 using DataMigrator;
 using DataMigrator.Entities;
-using DataMigrator.Interfaces;
+using ExtractorRepo;
+using ExtractorRepo.Entities;
 using Logger;
 
 namespace Extractor
@@ -21,15 +22,22 @@ namespace Extractor
         public void StartExtractor(String BatchId)
         {
             ExtractCourses(BatchId);
+            ExtractTeachers(BatchId);
         }
 
         private void ExtractCourses(String BatchId)
         {
-            var courseIntermediate = GetCourses(BatchId);
-            WriteCourses(courseIntermediate);
+            var subjects = GetCourses(BatchId);
+            WriteCourses(subjects);
         }
 
-        private List<CourseIntermediate> GetCourses(String BatchId)
+        private void ExtractTeachers(String BatchId)
+        {
+            var teachers = GetTeachers(BatchId);
+            WriteTeachers(teachers);
+        }
+
+        private List<Subject> GetCourses(String BatchId)
         {
             var sourceCourses = _dataReader.GetCourses();
 
@@ -37,11 +45,23 @@ namespace Extractor
 
             var acceptedCourses = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedCourses);
 
-            return acceptedCourses.OfType<CourseIntermediate>().ToList();
+            return acceptedCourses.OfType<Subject>().ToList();
 
         }
 
-        private void WriteCourses(List<CourseIntermediate> courses)
+        private List<Teacher> GetTeachers(String BatchId)
+        {
+            var sourceTeachers = _dataReader.GetTeachers();
+
+            var ValidatedTeachers = _engineValidator.ValidateMigratedObjects(sourceTeachers.ToList<MigratedObject>(), "Teacher", DomainEnum.Source);
+
+            var acceptedTeachers = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedTeachers);
+
+            return acceptedTeachers.OfType<Teacher>().ToList();
+
+        }
+
+        private void WriteCourses(List<Subject> courses)
         {
             using var myCon =
                 new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
@@ -63,7 +83,7 @@ namespace Extractor
             coursesReader.Close();
 
             var existingCourses = (from DataRow dr in coursesResult.Rows
-                select new CourseIntermediate
+                select new Subject
                 {
                     ExternalId = dr["ExternalId"].ToString()
                 }).ToList();
@@ -81,7 +101,66 @@ namespace Extractor
                 {
                     query = "INSERT INTO dbo.Course " +
                             "(Title, Description, ExternalId, TargetId, ToBeDeleted) " +
-                            "VALUES('" + course.Title + "', N'" + course.Description + "', N'" + course.ExternalId + "', NULL, 0)";
+                            "VALUES('" + course.Title + "', N'" + course.Description + "', N'" + course.ExternalId + "', NULL, 0, 0)";
+                }
+
+                using var updateCommand = new SqlCommand(query, myCon);
+                updateCommand.ExecuteNonQuery();
+            }
+
+            myCon.Close();
+        }
+        private void WriteTeachers(List<Teacher> teachers)
+        {
+            using var myCon =
+                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
+
+            var query = "UPDATE dbo.Instructor "
+                        + "SET ToBeDeleted = 1 ";
+            myCon.Open();
+            using var myCommand = new SqlCommand(query, myCon);
+            myCommand.ExecuteNonQuery();
+
+            query = "SELECT ExternalId " +
+                    "FROM dbo.Instructor " +
+                    "WHERE IsDeleted = 0";
+
+            using var selectCommand = new SqlCommand(query, myCon);
+            var teachersReader = selectCommand.ExecuteReader();
+            var teachersResult = new DataTable();
+            teachersResult.Load(teachersReader);
+            teachersReader.Close();
+
+            var existingTeachers = (from DataRow dr in teachersResult.Rows
+                                   select new Teacher
+                                   {
+                                       ExternalId = dr["ExternalId"].ToString()
+                                   }).ToList();
+
+            foreach (var teacher in teachers)
+            {
+                if (existingTeachers.Count(c => c.ExternalId == teacher.ExternalId) > 0)
+                {
+                    query = "UPDATE dbo.Instructor " +
+                            "SET FirstName = '" + teacher.Name.Substring(0,teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
+                            "', LastName = '" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
+                            "', Email = '" + teacher.Id + "@ourProduct.com" +
+                            "', BirthDate = '" + teacher.BirthDate +
+                            "', Gender = '" + teacher.Gender +
+                            "', ToBeDeleted = 0 " +
+                            "WHERE ExternalId = " + teacher.ExternalId + " ";
+                }
+                else
+                {
+                    query = "INSERT INTO dbo.Instructor " +
+                            "(Title, Description, ExternalId, TargetId, ToBeDeleted) " +
+                            "VALUES('" + teacher.Name.Substring(0, teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
+                            + "', N'" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
+                            + "', N'" + teacher.Id + "@ourProduct.com" 
+                            + "', N'" + teacher.BirthDate 
+                            + "', N'" + teacher.Gender 
+                            + "', N'" + "0" 
+                            + "', N'" + teacher.ExternalId + "', NULL, 0, 0)";
                 }
 
                 using var updateCommand = new SqlCommand(query, myCon);
