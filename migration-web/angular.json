@@ -123,5 +123,8 @@
       }
     }
   },
-  "defaultProject": "migration-web"
+  "defaultProject": "migration-web",
+  "cli": {
+    "analytics": false
+  }
 }
