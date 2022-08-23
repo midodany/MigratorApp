@@ -65,6 +65,7 @@ namespace SQLDataReader
                 {
                     MigrationId = dr["Id"].ToString(),
                     NationalId = dr["NationalId"].ToString(),
+                    Gender = dr["Gender"].ToString(),
                     Name = dr["Name"].ToString(),
                     BirthDate = DateTime.TryParse(dr["BirthDate"].ToString(),out birthDate) ? birthDate:DateTime.MinValue,
                     ExternalId = dr["Id"].ToString()

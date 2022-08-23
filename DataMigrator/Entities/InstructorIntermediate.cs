@@ -5,7 +5,7 @@ using BusinessRulesEngine.Entities;
 
 namespace DataMigrator.Entities
 {
-    public class TeacherIntermediate : MigratedObject
+    public class InstructorIntermediate : MigratedObject
     {
         public int? Id { get; set; }
         public string FirstName { set; get; }

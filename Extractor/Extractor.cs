@@ -144,8 +144,8 @@ namespace Extractor
                     query = "UPDATE dbo.Instructor " +
                             "SET FirstName = '" + teacher.Name.Substring(0,teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
                             "', LastName = '" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
-                            "', Email = '" + teacher.Id + "@ourProduct.com" +
-                            "', BirthDate = '" + teacher.BirthDate +
+                            "', Email = '" + teacher.NationalId + "@ourProduct.com" +
+                            "', BirthDate = '" + teacher.BirthDate.ToString("MM/dd/yyyy") +
                             "', Gender = '" + teacher.Gender +
                             "', ToBeDeleted = 0 " +
                             "WHERE ExternalId = " + teacher.ExternalId + " ";
@@ -153,14 +153,15 @@ namespace Extractor
                 else
                 {
                     query = "INSERT INTO dbo.Instructor " +
-                            "(Title, Description, ExternalId, TargetId, ToBeDeleted) " +
+                            "(FirstName, LastName, Email, BirthDate, Gender, Rating, ToBeDeleted, ExternalId, TargetId, IsDeleted) " +
                             "VALUES('" + teacher.Name.Substring(0, teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
                             + "', N'" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
-                            + "', N'" + teacher.Id + "@ourProduct.com" 
-                            + "', N'" + teacher.BirthDate 
+                            + "', N'" + teacher.NationalId + "@ourProduct.com" 
+                            + "', N'" + teacher.BirthDate.ToString("MM/dd/yyyy")
                             + "', N'" + teacher.Gender 
-                            + "', N'" + "0" 
-                            + "', N'" + teacher.ExternalId + "', NULL, 0, 0)";
+                            + "', " + "0" 
+                            + ", " + "0" 
+                            + ", N'" + teacher.ExternalId + "', NULL, 0)";
                 }
 
                 using var updateCommand = new SqlCommand(query, myCon);
