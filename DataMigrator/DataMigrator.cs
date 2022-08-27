@@ -34,14 +34,12 @@ namespace DataMigrator
             WriteInstructors(instructorIntermediate);
         }
 
-
-
         private List<CourseIntermediate> GetIntermediateCourses(string BatchId)
         {
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
             var query = "SELECT Id, Title, Description, ExternalId, TargetId, ToBeDeleted " +
                         "FROM dbo.Course " +
-                        "Where ToBeDeleted = 0 OR (ToBeDeleted = 1 AND IsDeleted = 1) ";
+                        "Where (ToBeDeleted = 0 OR IsDeleted = 0) ";
             var objResult = new DataTable();
             myCon.Open();
             using var myCommand = new SqlCommand(query, myCon);
@@ -75,7 +73,7 @@ namespace DataMigrator
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
             var query = "SELECT Id, FirstName, LastName, Email, BirthDate, Gender, ToBeDeleted, ExternalId ,TargetId " +
                         "FROM dbo.Instructor " +
-                        "Where ToBeDeleted = 0 OR (ToBeDeleted = 1 AND IsDeleted = 1) ";
+                        "Where (ToBeDeleted = 0 OR IsDeleted = 0) ";
             var objResult = new DataTable();
             myCon.Open();
             using var myCommand = new SqlCommand(query, myCon);
@@ -247,6 +245,7 @@ namespace DataMigrator
 
             intermediateCon.Close();
         }
+
 
     }
 }

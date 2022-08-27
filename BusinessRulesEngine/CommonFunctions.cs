@@ -14,7 +14,18 @@ namespace BusinessRulesEngine
         {
             Type type = instance.GetType();
             PropertyInfo propertyInfo = type.GetProperty(propertyName);
-            return propertyInfo != null ? propertyInfo.GetValue(instance, null)?.ToString() : "";
+            if (propertyInfo != null)
+            {
+                if (propertyInfo.PropertyType == typeof(DateTime))
+                {
+                    return Convert.ToDateTime(propertyInfo.GetValue(instance, null)).ToString("MM/dd/yyyy");
+                }
+                else
+                    return propertyInfo.GetValue(instance, null)?.ToString();
+            }
+            else
+                return "";
+            
         }
 
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 using BusinessRulesEngine;
 using BusinessRulesEngine.Entities;
 using DataMigrator;
@@ -23,145 +24,123 @@ namespace Extractor
         {
             ExtractCourses(BatchId);
             ExtractTeachers(BatchId);
+            //ExtractInstructorCourses(BatchId);
         }
 
         private void ExtractCourses(String BatchId)
         {
-            var subjects = GetCourses(BatchId);
-            WriteCourses(subjects);
+            var subjects = GetSourceEntities<Subject>(BatchId, _dataReader.GetCourses);
+            var properties = new List<string>() { "Title", "Description" };
+            WriteEntities(subjects.OfType<MigratedObject>().ToList(), "Course", properties);
+            //WriteCourses(subjects);
         }
 
         private void ExtractTeachers(String BatchId)
         {
-            var teachers = GetTeachers(BatchId);
-            WriteTeachers(teachers);
-        }
-
-        private List<Subject> GetCourses(String BatchId)
-        {
-            var sourceCourses = _dataReader.GetCourses();
-
-            var ValidatedCourses = _engineValidator.ValidateMigratedObjects(sourceCourses.ToList<MigratedObject>(), "Subject", DomainEnum.Source);
-
-            var acceptedCourses = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedCourses);
-
-            return acceptedCourses.OfType<Subject>().ToList();
-
-        }
-
-        private List<Teacher> GetTeachers(String BatchId)
-        {
-            var sourceTeachers = _dataReader.GetTeachers();
-
-            var ValidatedTeachers = _engineValidator.ValidateMigratedObjects(sourceTeachers.ToList<MigratedObject>(), "Teacher", DomainEnum.Source);
-
-            var acceptedTeachers = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedTeachers);
-
-            return acceptedTeachers.OfType<Teacher>().ToList();
-
-        }
-
-        private void WriteCourses(List<Subject> courses)
-        {
-            using var myCon =
-                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-
-            var query = "UPDATE dbo.Course "
-                        + "SET ToBeDeleted = 1 ";
-            myCon.Open();
-            using var myCommand = new SqlCommand(query, myCon);
-            myCommand.ExecuteNonQuery();
-
-            query = "SELECT ExternalId " +
-                    "FROM dbo.Course " +
-                    "WHERE IsDeleted = 0";
-
-            using var selectCommand = new SqlCommand(query, myCon);
-            var coursesReader = selectCommand.ExecuteReader();
-            var coursesResult = new DataTable();
-            coursesResult.Load(coursesReader);
-            coursesReader.Close();
-
-            var existingCourses = (from DataRow dr in coursesResult.Rows
-                select new Subject
-                {
-                    ExternalId = dr["ExternalId"].ToString()
-                }).ToList();
-
-            foreach (var course in courses)
-            {
-                if (existingCourses.Count(c => c.ExternalId == course.ExternalId) > 0)
-                {
-                    query = "UPDATE dbo.Course " +
-                            "SET Title = '" + course.Title + "', Description = '" + course.Description +
-                            "', ToBeDeleted = 0 " +
-                            "WHERE ExternalId = " + course.ExternalId + " ";
-                }
-                else
-                {
-                    query = "INSERT INTO dbo.Course " +
-                            "(Title, Description, ExternalId, TargetId, ToBeDeleted) " +
-                            "VALUES('" + course.Title + "', N'" + course.Description + "', N'" + course.ExternalId + "', NULL, 0, 0)";
-                }
-
-                using var updateCommand = new SqlCommand(query, myCon);
-                updateCommand.ExecuteNonQuery();
-            }
-
-            myCon.Close();
-        }
-        private void WriteTeachers(List<Teacher> teachers)
-        {
-            using var myCon =
-                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-
-            var query = "UPDATE dbo.Instructor "
-                        + "SET ToBeDeleted = 1 ";
-            myCon.Open();
-            using var myCommand = new SqlCommand(query, myCon);
-            myCommand.ExecuteNonQuery();
-
-            query = "SELECT ExternalId " +
-                    "FROM dbo.Instructor " +
-                    "WHERE IsDeleted = 0";
-
-            using var selectCommand = new SqlCommand(query, myCon);
-            var teachersReader = selectCommand.ExecuteReader();
-            var teachersResult = new DataTable();
-            teachersResult.Load(teachersReader);
-            teachersReader.Close();
-
-            var existingTeachers = (from DataRow dr in teachersResult.Rows
-                                   select new Teacher
-                                   {
-                                       ExternalId = dr["ExternalId"].ToString()
-                                   }).ToList();
-
+            var teachers = GetSourceEntities<Teacher>(BatchId, _dataReader.GetTeachers);
             foreach (var teacher in teachers)
             {
-                if (existingTeachers.Count(c => c.ExternalId == teacher.ExternalId) > 0)
+                teacher.FirstName = teacher.Name.Substring(0, teacher.Name.IndexOf(" ", StringComparison.Ordinal));
+                teacher.LastName = teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal));
+                teacher.Email = $"{teacher.NationalId}@ourProduct.com";
+            }
+            var properties = new List<string>() { "FirstName", "LastName", "Email", "BirthDate", "Gender" };
+            WriteEntities(teachers.OfType<MigratedObject>().ToList(), "Instructor", properties);
+            //WriteTeachers(teachers);
+        }
+
+        private List<T> GetSourceEntities<T>(string BatchId, Func<List<T>> dataReaderFunction)
+        {
+            var sourceEntities = dataReaderFunction();
+
+            var ValidatedEntities = _engineValidator.ValidateMigratedObjects(sourceEntities.OfType<MigratedObject>().ToList(), typeof(T).Name, DomainEnum.Source);
+
+            var acceptedEntities = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Source, ValidatedEntities);
+
+            return acceptedEntities.OfType<T>().ToList();
+        }
+
+        private void WriteEntities(List<MigratedObject> entities, string IntermediateEntityName, List<string> properties, string ExternalIdColumn = "ExternalId")
+        {
+            using var myCon =
+                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
+
+            var query = $"UPDATE {IntermediateEntityName} "
+                        + "SET ToBeDeleted = 1 ";
+            myCon.Open();
+            using var myCommand = new SqlCommand(query, myCon);
+            myCommand.ExecuteNonQuery();
+
+            query = $"SELECT {ExternalIdColumn} " +
+                    $"FROM {IntermediateEntityName} " +
+                    "WHERE IsDeleted = 0";
+
+            using var selectCommand = new SqlCommand(query, myCon);
+            var entitysReader = selectCommand.ExecuteReader();
+            var entitysResult = new DataTable();
+            entitysResult.Load(entitysReader);
+            entitysReader.Close();
+
+            List<string> existingEntities;
+            if (ExternalIdColumn == "ExternalId")
+            {
+                existingEntities = (from DataRow dr in entitysResult.Rows
+                                    select dr[ExternalIdColumn].ToString()).ToList();
+            }
+            else
+            {
+                existingEntities = (from DataRow dr in entitysResult.Rows
+                                    select dr[ExternalIdColumn.Split(',')[0]].ToString() + "," + dr[ExternalIdColumn.Split(',')[1]].ToString()).ToList();
+            }
+
+
+
+            foreach (var entity in entities)
+            {
+                StringBuilder updateProperties = new StringBuilder();
+                StringBuilder insertProperties = new StringBuilder();
+                StringBuilder insertValues = new StringBuilder();
+                foreach (var property in properties)
                 {
-                    query = "UPDATE dbo.Instructor " +
-                            "SET FirstName = '" + teacher.Name.Substring(0,teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
-                            "', LastName = '" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) +
-                            "', Email = '" + teacher.NationalId + "@ourProduct.com" +
-                            "', BirthDate = '" + teacher.BirthDate.ToString("MM/dd/yyyy") +
-                            "', Gender = '" + teacher.Gender +
-                            "', ToBeDeleted = 0 " +
-                            "WHERE ExternalId = " + teacher.ExternalId + " ";
+                    var propertyValue = CommonFunctions.GetThePropertyValue(entity, property);
+                    updateProperties.Append($" {property} = N'{propertyValue}' ,");
+
+                    insertProperties.Append($" {property} ,");
+
+                    insertValues.Append($" N'{propertyValue}' ,");
+                }
+
+                if (ExternalIdColumn == "ExternalId")
+                {
+                    updateProperties.Append($" {ExternalIdColumn} = N'{entity.GetUniqueExternalId()}' ,");
+
+                    insertProperties.Append($" {ExternalIdColumn} ,");
+
+                    insertValues.Append($" N'{entity.GetUniqueExternalId()}' ,");
                 }
                 else
                 {
-                    query = "INSERT INTO dbo.Instructor " +
-                            "(FirstName, LastName, Email, BirthDate, Gender, Rating, ToBeDeleted, ExternalId, TargetId, IsDeleted) " +
-                            "VALUES('" + teacher.Name.Substring(0, teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
-                            + "', N'" + teacher.Name.Substring(teacher.Name.IndexOf(" ", StringComparison.Ordinal)) 
-                            + "', N'" + teacher.NationalId + "@ourProduct.com" 
-                            + "', N'" + teacher.BirthDate.ToString("MM/dd/yyyy")
-                            + "', N'" + teacher.Gender 
-                            + "', " + "0" 
-                            + ", " + "0" 
-                            + ", N'" + teacher.ExternalId + "', NULL, 0)";
+                    updateProperties.Append($" {ExternalIdColumn.Split(',')[0]} = N'{entity.GetUniqueExternalId().Split(',')[0]}' ,");
+                    updateProperties.Append($" {ExternalIdColumn.Split(',')[1]} = N'{entity.GetUniqueExternalId().Split(',')[1]}' ,");
+
+                    insertProperties.Append($" {ExternalIdColumn} ,");
+
+                    insertValues.Append($" N'{entity.GetUniqueExternalId().Split(',')[0]}' ,");
+                    insertValues.Append($" N'{entity.GetUniqueExternalId().Split(',')[1]}' ,");
+                }
+
+
+                if (existingEntities.Contains(entity.GetUniqueExternalId()))
+                {
+                    query = $"UPDATE {IntermediateEntityName} " +
+                            $"SET {updateProperties} ToBeDeleted = 0 " +
+                            $"WHERE ExternalId =  '{entity.GetUniqueExternalId()}' ";
+                }
+                else
+                {
+                    query = $"INSERT INTO {IntermediateEntityName} " +
+                            $"({insertProperties}  TargetId, ToBeDeleted) " +
+                            $"VALUES({insertValues} , NULL, 0, 0)";
                 }
 
                 using var updateCommand = new SqlCommand(query, myCon);

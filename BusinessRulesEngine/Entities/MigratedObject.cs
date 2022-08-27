@@ -8,5 +8,7 @@ namespace BusinessRulesEngine.Entities
     {
         public string MigrationId { get; set; }
         public readonly List<ValidationLog> ValidationLogs = new List<ValidationLog>();
+
+        public abstract string GetUniqueExternalId();
     }
 }
