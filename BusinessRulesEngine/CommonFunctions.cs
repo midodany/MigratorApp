@@ -28,6 +28,38 @@ namespace BusinessRulesEngine
             
         }
 
+        public static void SetThePropertyValue(object instance,string propertyName, object propertyValue)
+        {
+            Type type = instance.GetType();
+
+            PropertyInfo prop = type.GetProperty(propertyName);
+            
+            if(prop.PropertyType == typeof(int?))
+            {
+                int resultValue;
+                prop.SetValue(instance, int.TryParse(propertyValue.ToString(), out resultValue) ? resultValue : null );
+            }
+            else if (prop.PropertyType == typeof(int))
+            {
+                int resultValue;
+                prop.SetValue(instance, int.TryParse(propertyValue.ToString(), out resultValue) ? resultValue : 0);
+            }
+            else if (prop.PropertyType == typeof(bool))
+            {
+                bool resultValue;
+                prop.SetValue(instance, bool.TryParse(propertyValue.ToString(), out resultValue) ? resultValue : false);
+            }
+            else if (prop.PropertyType == typeof(DateTime))
+            {
+                DateTime resultValue;
+                prop.SetValue(instance, DateTime.TryParse(propertyValue.ToString(), out resultValue) ? resultValue : null);
+            }
+            else
+            {
+                prop.SetValue(instance, propertyValue);
+            }
+        }
+
 
         public static List<MigratedObject> ApplyFilter(string BatchId,DomainEnum domainEnum, List<MigratedObject> migratedObjects)
         {

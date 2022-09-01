@@ -9,6 +9,7 @@ using DataMigrator.Entities;
 using BusinessRulesEngine;
 using BusinessRulesEngine.Entities;
 using Logger;
+using System.Text;
 
 namespace DataMigrator
 {
@@ -24,21 +25,46 @@ namespace DataMigrator
 
         private void MigrateCourses(string BatchId)
         {
-            var courseIntermediate = GetIntermediateCourses(BatchId);
-            WriteCourses(courseIntermediate);
+            var properties = new List<string>() { "Id", "Title", "Description" };
+            var courseIntermediate = GetIntermediateEnteties<CourseIntermediate>(BatchId, "Course", properties);
+
+            properties.RemoveAt(0);
+
+            WriteEntities(courseIntermediate.OfType<MigratedObject>().ToList(), "Course", properties);
         }
 
         private void MigrateInstructors(string BatchId)
         {
-            var instructorIntermediate = GetIntermediateInstructors(BatchId);
-            WriteInstructors(instructorIntermediate);
+            var properties = new List<string>() { "Id", "FirstName", "LastName", "Email", "BirthDate", "Gender" };
+            var instructorIntermediate = GetIntermediateEnteties<InstructorIntermediate>(BatchId, "Instructor", properties);
+
+            properties.RemoveAt(0);
+
+            WriteEntities(instructorIntermediate.OfType<MigratedObject>().ToList(), "Instructor", properties);
         }
 
-        private List<CourseIntermediate> GetIntermediateCourses(string BatchId)
+        private List<T> GetIntermediateEnteties<T>(string BatchId, string IntermediateEntityName, List<string> properties,
+            string ExternalIdColumn = "ExternalId", string TargetIdColumn = "TargetId", string[,] tablesToJoinColumns = null) where T : MigratedObject, new()
         {
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-            var query = "SELECT Id, Title, Description, ExternalId, TargetId, ToBeDeleted " +
-                        "FROM dbo.Course " +
+            var ExternalIdColumnNames = ExternalIdColumn.Split(',');
+            var TargetIdColumnNames = TargetIdColumn.Split(',');
+            string joinQuery = string.Empty;
+            string targetIdSelectQuery = string.Empty;
+            if (tablesToJoinColumns != null && ExternalIdColumnNames.Length > 1 && TargetIdColumnNames.Length > 1)
+            {
+                targetIdSelectQuery = $", t1.TargetId {TargetIdColumnNames[0]}, t2.TargetId {TargetIdColumnNames[1]}";
+                joinQuery = $" LEFT JOIN {tablesToJoinColumns[0, 0] } t1 ON a.{ExternalIdColumnNames[0]} = t1.{tablesToJoinColumns[0, 1]} ";
+                joinQuery += $" LEFT JOIN {tablesToJoinColumns[1, 0] } t2 ON a.{ExternalIdColumnNames[1]} = t2.{tablesToJoinColumns[1, 1]} ";
+            }
+            else
+            {
+                targetIdSelectQuery = TargetIdColumn;
+            }
+
+            var query = $"SELECT {string.Join(",", properties.Select(p => "a." + p))}, {string.Join(",", ExternalIdColumnNames.Select(c => "a." + c))}, {targetIdSelectQuery}, a.ToBeDeleted " +
+                        $"FROM {IntermediateEntityName} a " +
+                        $"{joinQuery} " +
                         "Where (ToBeDeleted = 0 OR IsDeleted = 0) ";
             var objResult = new DataTable();
             myCon.Open();
@@ -49,203 +75,213 @@ namespace DataMigrator
             myReader.Close();
             myCon.Close();
 
-            var courses = (from DataRow dr in objResult.Rows
-                select new CourseIntermediate
+            var entities = new List<T>();
+
+            foreach (DataRow row in objResult.Rows)
+            {
+                var entity = new T();
+                foreach (var property in properties)
                 {
-                    MigrationId = dr["ExternalId"].ToString(),
-                    Id = dr.Field<int?>("Id"),
-                    Title = dr["Title"].ToString(),
-                    Description = dr["Description"].ToString(),
-                    ExternalId = dr["ExternalId"].ToString(),
-                    TargetId = dr.Field<int?>("TargetId"),
-                    ToBeDeleted = dr.Field<bool>("ToBeDeleted")
-                }).ToList();
+                    CommonFunctions.SetThePropertyValue(entity, property, row[property].ToString());
+                }
+                CommonFunctions.SetThePropertyValue(entity, ExternalIdColumnNames[0], row[ExternalIdColumnNames[0]]);
+                CommonFunctions.SetThePropertyValue(entity, TargetIdColumnNames[0], row[TargetIdColumnNames[0]]);
 
-            var ValidatedCourses = _engineValidator.ValidateMigratedObjects(courses.ToList<MigratedObject>(), "Course",DomainEnum.Target);
+                if (ExternalIdColumnNames.Length > 1 && TargetIdColumnNames.Length > 1)
+                {
+                    CommonFunctions.SetThePropertyValue(entity, ExternalIdColumnNames[1], row[ExternalIdColumnNames[1]]);
+                    CommonFunctions.SetThePropertyValue(entity, TargetIdColumnNames[1], row[TargetIdColumnNames[1]]);
+                }
 
-            var acceptedCourses = CommonFunctions.ApplyFilter(BatchId,DomainEnum.Target,ValidatedCourses);
+                CommonFunctions.SetThePropertyValue(entity, "ToBeDeleted", row["ToBeDeleted"]);
+                entity.MigrationId = row["ExternalId"].ToString();
+                entities.Add(entity);
+            }
 
-            return acceptedCourses.OfType<CourseIntermediate>().ToList();
+            var ValidatedEntities = _engineValidator.ValidateMigratedObjects(entities.ToList<MigratedObject>(), IntermediateEntityName, DomainEnum.Target);
+
+            var acceptedEntities = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Target, ValidatedEntities);
+
+            return acceptedEntities.OfType<T>().ToList();
         }
 
-        private List<InstructorIntermediate> GetIntermediateInstructors(string BatchId)
+        private void WriteEntities(List<MigratedObject> inputEntities, string IntermediateEntityName, List<string> properties, string ExternalIdColumn = "ExternalId",
+            string TargetIdColumn = "TargetId", string MigratedIdColumn = "Id")
         {
-            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-            var query = "SELECT Id, FirstName, LastName, Email, BirthDate, Gender, ToBeDeleted, ExternalId ,TargetId " +
-                        "FROM dbo.Instructor " +
-                        "Where (ToBeDeleted = 0 OR IsDeleted = 0) ";
-            var objResult = new DataTable();
-            myCon.Open();
-            using var myCommand = new SqlCommand(query, myCon);
-            var myReader = myCommand.ExecuteReader();
-            objResult.Load(myReader);
+            List<string> ExternalIdColumnsList = ExternalIdColumn.Split(',').ToList();
+            List<string> TargetIdColumnsList = TargetIdColumn.Split(',').ToList();
+            List<string> MigratedIdColumnsList = MigratedIdColumn.Split(',').ToList();
 
-            myReader.Close();
-            myCon.Close();
-
-            var instructors = (from DataRow dr in objResult.Rows
-                           select new InstructorIntermediate
-                           {
-                               MigrationId = dr["ExternalId"].ToString(),
-                               Id = dr.Field<int?>("Id"),
-                               FirstName = dr["FirstName"].ToString(),
-                               LastName = dr["LastName"].ToString(),
-                               Email = dr["Email"].ToString(),
-                               BirthDate = DateTime.Parse(dr["BirthDate"].ToString()),
-                               Gender = dr["Gender"].ToString(),
-                               ExternalId = dr["ExternalId"].ToString(),
-                               TargetId = dr.Field<int?>("TargetId"),
-                               ToBeDeleted = dr.Field<bool>("ToBeDeleted")
-                           }).ToList();
-
-            var ValidatedInstructors = _engineValidator.ValidateMigratedObjects(instructors.ToList<MigratedObject>(), "Instructors", DomainEnum.Target);
-
-            var acceptedInstructors = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Target, ValidatedInstructors);
-
-            return acceptedInstructors.OfType<InstructorIntermediate>().ToList();
-        }
-
-        private void WriteCourses(List<CourseIntermediate> inputCourses)
-        {
-            var toBeDeletedCourses = inputCourses.Where(c => c.ToBeDeleted && c.TargetId != null).ToList();
-            var toBeAddedCourses = inputCourses.Where(c => !c.ToBeDeleted && c.TargetId == null).ToList();
-            var toBeUpdatedCourses = inputCourses.Where(c => !c.ToBeDeleted && c.TargetId != null).ToList();
+            var toBeDeletedEntities = inputEntities.Where(e => bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
+            var toBeAddedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && !int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
+            var toBeUpdatedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
 
 
             using var myCon =
                 new SqlConnection(_connectionStringManager.GetConnectionString("MigratedConnectionString"));
             myCon.Open();
-            foreach (var course in toBeDeletedCourses)
+
+            //reference Entity
+            if (MigratedIdColumnsList.Count > 1)
             {
-                var query = "DELETE dbo.Course "
-                        + "WHERE Id = " + course.TargetId;
+                toBeDeletedEntities.AddRange(toBeUpdatedEntities);
+                toBeAddedEntities = toBeUpdatedEntities;
+            }
+
+            foreach (var entity in toBeDeletedEntities)
+            {
+                string whereCondition = $" WHERE {MigratedIdColumnsList[0]} = {CommonFunctions.GetThePropertyValue(entity, TargetIdColumnsList[0])} ";
+
+                if (MigratedIdColumnsList.Count > 1)
+                {
+                    whereCondition += $" AND  {MigratedIdColumnsList[1]} = {CommonFunctions.GetThePropertyValue(entity, TargetIdColumnsList[1])} ";
+                }
+
+                var query = $"DELETE {IntermediateEntityName} "
+                        + whereCondition;
                 using var myCommand = new SqlCommand(query, myCon);
                 myCommand.ExecuteNonQuery();
             }
 
-            foreach (var course in toBeAddedCourses)
+            string insertQuery = string.Empty;
+            var outputId = string.Empty;
+
+            if (MigratedIdColumnsList.Count > 1)
             {
+                if (properties.Count > 0)
+                {
+                    insertQuery = $" ({string.Join(',', properties)}, {MigratedIdColumn}) ";
+                }
+                else
+                {
+                    insertQuery += $" ({MigratedIdColumn}) ";
+                }
+            }
+            else
+            {
+                insertQuery = $" ({string.Join(',', properties)}) ";
+                outputId = "output INSERTED.Id V ";
+            }
+
+            foreach (var entity in toBeAddedEntities)
+            {
+                StringBuilder insertValues = new StringBuilder(" VALUES(");
+                foreach (var property in properties)
+                {
+                    var propertyValue = CommonFunctions.GetThePropertyValue(entity, property);
+
+                    insertValues.Append($" N'{propertyValue}' ");
+                }
+                if (properties.Count > 0)
+                {
+                    insertValues.Append(", ");
+                }
+                if (MigratedIdColumnsList.Count > 1)
+                {
+                    insertValues.Append($" N'{CommonFunctions.GetThePropertyValue(entity, MigratedIdColumnsList[0])}',  ");
+                    insertValues.Append($" N'{CommonFunctions.GetThePropertyValue(entity, MigratedIdColumnsList[1])}' ");
+                }
+                foreach (var MigratedIdColumnName in MigratedIdColumnsList)
+                {
+                    insertValues.Append($" N'{CommonFunctions.GetThePropertyValue(entity, MigratedIdColumnName)}' ");
+                }
+                insertValues.Append(") ");
+
                 var objResult = new DataTable();
-                var query = "INSERT INTO dbo.Course " +
-                        "(Title, Description) " +
-                        "output INSERTED.Id V " +
-                        "VALUES('" + course.Title + "', N'" + course.Description + "') " ;
+                var query = $"INSERT INTO {IntermediateEntityName} " +
+                        insertQuery +
+                        outputId +
+                        insertValues;
                 using var myCommand = new SqlCommand(query, myCon);
                 var myReader = myCommand.ExecuteReader();
                 objResult.Load(myReader);
 
                 myReader.Close();
-                var insertedId = objResult.Rows[0].Field<int>("V");
-                course.TargetId = insertedId;
+                if (TargetIdColumnsList.Count > 1)
+                {
+                    CommonFunctions.SetThePropertyValue(entity, TargetIdColumnsList[0], insertValues);
+                    CommonFunctions.SetThePropertyValue(entity, TargetIdColumnsList[1], insertValues);
+                }
+                else
+                {
+                    var insertedId = objResult.Rows[0].Field<int>("V");
+                    CommonFunctions.SetThePropertyValue(entity, TargetIdColumnsList[0], insertValues);
+                }
             }
 
-            foreach (var course in toBeUpdatedCourses)
+            if (MigratedIdColumnsList.Count == 1)
             {
-                var query = "UPDATE dbo.Course " +
-                            "SET Title = '"+course.Title+"', Description = '"+course.Description+"' " + 
-                            "WHERE Id = " + course.TargetId;
-                using var myCommand = new SqlCommand(query, myCon);
-                myCommand.ExecuteNonQuery();
+                foreach (var entity in toBeUpdatedEntities)
+                {
+                    StringBuilder updatequery = new StringBuilder();
+                    foreach (var property in properties)
+                    {
+                        updatequery.Append($" {property} = '{CommonFunctions.GetThePropertyValue(entity, property)}' ,");
+                    }
+                    updatequery.Length--;
+
+
+                    var query = $"UPDATE {IntermediateEntityName} " +
+                                $"SET {updatequery} " +
+                                $"WHERE {MigratedIdColumn} = " + CommonFunctions.GetThePropertyValue(entity, TargetIdColumn);
+                    using var myCommand = new SqlCommand(query, myCon);
+                    myCommand.ExecuteNonQuery();
+                }
+
+                myCon.Close();
+
+                using var intermediateCon =
+                    new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
+                intermediateCon.Open();
+
+                foreach (var entity in toBeDeletedEntities)
+                {
+                    var query = $"UPDATE {IntermediateEntityName} " +
+                                "SET IsDeleted = 1 " +
+                                $"WHERE {TargetIdColumn} = {CommonFunctions.GetThePropertyValue(entity, TargetIdColumn)} ";
+                    using var myCommand = new SqlCommand(query, intermediateCon);
+                    myCommand.ExecuteNonQuery();
+                }
+
+                foreach (var entity in toBeAddedEntities)
+                {
+                    var query = $"UPDATE {IntermediateEntityName} " +
+                                $"SET {TargetIdColumn} = {CommonFunctions.GetThePropertyValue(entity, TargetIdColumn)} " +
+                                $"WHERE {MigratedIdColumn} = " + CommonFunctions.GetThePropertyValue(entity, MigratedIdColumn);
+                    using var myCommand = new SqlCommand(query, intermediateCon);
+                    myCommand.ExecuteNonQuery();
+                }
+
+                intermediateCon.Close();
             }
-
-            myCon.Close();
-
-            using var intermediateCon =
-                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-            intermediateCon.Open();
-
-            foreach (var course in toBeDeletedCourses)
+            else
             {
-                var query = "UPDATE dbo.Course "+
-                            "SET IsDeleted = 1 "+
-                            "WHERE TargetId = " + course.TargetId;
+                myCon.Close();
+
+                using var intermediateCon =
+                    new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
+                intermediateCon.Open();
+
+                var query = $"UPDATE {toBeUpdatedEntities} " +
+                            "SET IsDeleted = 1 ";
                 using var myCommand = new SqlCommand(query, intermediateCon);
                 myCommand.ExecuteNonQuery();
+
+
+                foreach (var entity in toBeAddedEntities)
+                {
+                    query = $"UPDATE {toBeUpdatedEntities} " +
+                                $"SET IsDeleted = 0 " +
+                                $"WHERE {TargetIdColumnsList[0]}  =  {CommonFunctions.GetThePropertyValue(entity, TargetIdColumnsList[0])} " +
+                                $"AND  {TargetIdColumnsList[1]}  =  {CommonFunctions.GetThePropertyValue(entity, TargetIdColumnsList[1])} ";
+                    using var updateCommand = new SqlCommand(query, intermediateCon);
+                    updateCommand.ExecuteNonQuery();
+                }
+
+                intermediateCon.Close();
             }
 
-            foreach (var course in toBeAddedCourses)
-            {
-                var query = "UPDATE dbo.Course " +
-                            "SET TargetId = " + course.TargetId +
-                            " WHERE Id = " + course.Id;
-                using var myCommand = new SqlCommand(query, intermediateCon);
-                myCommand.ExecuteNonQuery();
-            }
-
-            intermediateCon.Close();
         }
-
-        private void WriteInstructors(List<InstructorIntermediate> inputInstructors)
-        {
-            var toBeDeletedInstructors = inputInstructors.Where(c => c.ToBeDeleted && c.TargetId != null).ToList();
-            var toBeAddedInstructors = inputInstructors.Where(c => !c.ToBeDeleted && c.TargetId == null).ToList();
-            var toBeUpdatedInstructors = inputInstructors.Where(c => !c.ToBeDeleted && c.TargetId != null).ToList();
-
-
-            using var myCon =
-                new SqlConnection(_connectionStringManager.GetConnectionString("MigratedConnectionString"));
-            myCon.Open();
-            foreach (var instructor in toBeDeletedInstructors)
-            {
-                var query = "DELETE dbo.Instructor "
-                        + "WHERE Id = " + instructor.TargetId;
-                using var myCommand = new SqlCommand(query, myCon);
-                myCommand.ExecuteNonQuery();
-            }
-
-            foreach (var instructor in toBeAddedInstructors)
-            {
-                var objResult = new DataTable();
-                var query = "INSERT INTO dbo.Instructor " +
-                        "(FirstName, LastName, Email, BirthDate, Gender, Rating) " +
-                        "output INSERTED.Id V " +
-                        "VALUES('" + instructor.FirstName + "', N'" + instructor.LastName + "', N'" + instructor.Email + "', N'" + instructor.BirthDate.ToString("MM/dd/yyyy") + "', N'" + instructor.Gender + "', N'" + instructor.Rating + "') ";
-                using var myCommand = new SqlCommand(query, myCon);
-                var myReader = myCommand.ExecuteReader();
-                objResult.Load(myReader);
-
-                myReader.Close();
-                var insertedId = objResult.Rows[0].Field<int>("V");
-                instructor.TargetId = insertedId;
-            }
-
-            foreach (var instructor in toBeUpdatedInstructors)
-            {
-                var query = "UPDATE dbo.Instructor " +
-                            "SET FirstName = '" + instructor.FirstName + "', LastName = '" + instructor.LastName + "', Email = '" + instructor.Email +
-                             "', BirthDate = '" + instructor.BirthDate.ToString("MM/dd/yyyy") + "', Gender = '" + instructor.Gender + "' " +
-                            "WHERE Id = " + instructor.TargetId;
-                using var myCommand = new SqlCommand(query, myCon);
-                myCommand.ExecuteNonQuery();
-            }
-
-            myCon.Close();
-
-            using var intermediateCon =
-                new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
-            intermediateCon.Open();
-
-            foreach (var instructor in toBeDeletedInstructors)
-            {
-                var query = "UPDATE dbo.Instructor " +
-                            "SET IsDeleted = 1 " +
-                            "WHERE TargetId = " + instructor.TargetId;
-                using var myCommand = new SqlCommand(query, intermediateCon);
-                myCommand.ExecuteNonQuery();
-            }
-
-            foreach (var instructor in toBeAddedInstructors)
-            {
-                var query = "UPDATE dbo.Instructor " +
-                            "SET TargetId = " + instructor.TargetId +
-                            " WHERE Id = " + instructor.Id;
-                using var myCommand = new SqlCommand(query, intermediateCon);
-                myCommand.ExecuteNonQuery();
-            }
-
-            intermediateCon.Close();
-        }
-
 
     }
 }

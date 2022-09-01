@@ -20,7 +20,7 @@ namespace SQLDataReader
             var objResult = new DataTable();
             var query = "SELECT Id, Title, Description " +
                                 "FROM dbo.Subject ";
-            
+
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("DataSourceConnectionString"));
             myCon.Open();
             using var myCommand = new SqlCommand(query, myCon);
@@ -31,13 +31,13 @@ namespace SQLDataReader
             myCon.Close();
 
             var courses = (from DataRow dr in objResult.Rows
-                select new Subject
-                {
-                    MigrationId = dr["Id"].ToString(),
-                    Title = dr["Title"].ToString(),
-                    Description = dr["Description"].ToString(),
-                    ExternalId = dr["Id"].ToString()
-                }).ToList();
+                           select new Subject
+                           {
+                               MigrationId = dr["Id"].ToString(),
+                               Title = dr["Title"].ToString(),
+                               Description = dr["Description"].ToString(),
+                               ExternalId = dr["Id"].ToString()
+                           }).ToList();
             return courses;
         }
 
@@ -56,20 +56,18 @@ namespace SQLDataReader
             myReader.Close();
             myCon.Close();
 
-            DateTime birthDate
-                
-                ;
+            DateTime birthDate;
 
             var teachers = (from DataRow dr in objResult.Rows
-                select new Teacher()
-                {
-                    MigrationId = dr["Id"].ToString(),
-                    NationalId = dr["NationalId"].ToString(),
-                    Gender = dr["Gender"].ToString(),
-                    Name = dr["Name"].ToString(),
-                    BirthDate = DateTime.TryParse(dr["BirthDate"].ToString(),out birthDate) ? birthDate:DateTime.MinValue,
-                    ExternalId = dr["Id"].ToString()
-                }).ToList();
+                            select new Teacher()
+                            {
+                                MigrationId = dr["Id"].ToString(),
+                                NationalId = dr["NationalId"].ToString(),
+                                Gender = dr["Gender"].ToString(),
+                                Name = dr["Name"].ToString(),
+                                BirthDate = DateTime.TryParse(dr["BirthDate"].ToString(), out birthDate) ? birthDate : DateTime.MinValue,
+                                ExternalId = dr["Id"].ToString()
+                            }).ToList();
             return teachers;
         }
     }
