@@ -7,5 +7,7 @@ namespace ExtractorRepo
     {
         List<Subject> GetCourses();
         List<Teacher> GetTeachers();
+        List<Student> GetStudents();
+        List<StudentSubject> GetStudentSubject();
     }
 }

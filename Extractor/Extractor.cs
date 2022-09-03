@@ -24,7 +24,8 @@ namespace Extractor
         {
             ExtractCourses(BatchId);
             ExtractTeachers(BatchId);
-            //ExtractInstructorCourses(BatchId);
+            ExtractStudents(BatchId);
+            ExtractStudentCourse(BatchId);
         }
 
         private void ExtractCourses(String BatchId)
@@ -32,7 +33,6 @@ namespace Extractor
             var subjects = GetSourceEntities<Subject>(BatchId, _dataReader.GetCourses);
             var properties = new List<string>() { "Title", "Description" };
             WriteEntities(subjects.OfType<MigratedObject>().ToList(), "Course", properties);
-            //WriteCourses(subjects);
         }
 
         private void ExtractTeachers(String BatchId)
@@ -46,11 +46,30 @@ namespace Extractor
             }
             var properties = new List<string>() { "FirstName", "LastName", "Email", "BirthDate", "Gender" };
             WriteEntities(teachers.OfType<MigratedObject>().ToList(), "Instructor", properties);
-            //WriteTeachers(teachers);
+        }
+
+        private void ExtractStudents(String BatchId)
+        {
+            var students = GetSourceEntities<Student>(BatchId, _dataReader.GetStudents);
+            foreach (var student in students)
+            {
+                student.FirstName = student.Name.Substring(0, student.Name.IndexOf(" ", StringComparison.Ordinal));
+                student.LastName = student.Name.Substring(student.Name.IndexOf(" ", StringComparison.Ordinal));
+                student.Email = $"{student.NationalId}@ourProduct.com";
+            }
+            var properties = new List<string>() { "FirstName", "LastName", "Email", "BirthDate", "Gender" };
+            WriteEntities(students.OfType<MigratedObject>().ToList(), "Student", properties);
+        }
+
+        private void ExtractStudentCourse(String BatchId)
+        {
+            var studentCourse = GetSourceEntities<StudentSubject>(BatchId, _dataReader.GetStudentSubject);
+            WriteEntities(studentCourse.OfType<MigratedObject>().ToList(), "StudentCourse", null, "ExternalStudentId,ExternalCourseId", "TargetStudentId,TargetCourseId");
         }
 
         private List<T> GetSourceEntities<T>(string BatchId, Func<List<T>> dataReaderFunction)
         {
+            Console.WriteLine($"Extracting: {typeof(T).Name}");
             var sourceEntities = dataReaderFunction();
 
             var ValidatedEntities = _engineValidator.ValidateMigratedObjects(sourceEntities.OfType<MigratedObject>().ToList(), typeof(T).Name, DomainEnum.Source);
@@ -60,8 +79,9 @@ namespace Extractor
             return acceptedEntities.OfType<T>().ToList();
         }
 
-        private void WriteEntities(List<MigratedObject> entities, string IntermediateEntityName, List<string> properties, string ExternalIdColumn = "ExternalId")
+        private void WriteEntities(List<MigratedObject> entities, string IntermediateEntityName, List<string> properties, string ExternalIdColumn = "ExternalId", string TargetIdColumn = "TargetId")
         {
+            Console.WriteLine($"Transforming: {IntermediateEntityName}");
             using var myCon =
                 new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
 
@@ -72,8 +92,7 @@ namespace Extractor
             myCommand.ExecuteNonQuery();
 
             query = $"SELECT {ExternalIdColumn} " +
-                    $"FROM {IntermediateEntityName} " +
-                    "WHERE IsDeleted = 0";
+                    $"FROM {IntermediateEntityName} ";
 
             using var selectCommand = new SqlCommand(query, myCon);
             var entitysReader = selectCommand.ExecuteReader();
@@ -94,29 +113,37 @@ namespace Extractor
             }
 
 
-
+            var iteration = 1;
             foreach (var entity in entities)
             {
                 StringBuilder updateProperties = new StringBuilder();
                 StringBuilder insertProperties = new StringBuilder();
                 StringBuilder insertValues = new StringBuilder();
-                foreach (var property in properties)
+                StringBuilder whereValue = new StringBuilder();
+                if (properties != null)
                 {
-                    var propertyValue = CommonFunctions.GetThePropertyValue(entity, property);
-                    updateProperties.Append($" {property} = N'{propertyValue}' ,");
+                    foreach (var property in properties)
+                    {
+                        var propertyValue = CommonFunctions.GetThePropertyValue(entity, property);
+                        updateProperties.Append($" {property} = N'{propertyValue}' ,");
 
-                    insertProperties.Append($" {property} ,");
+                        insertProperties.Append($" {property} ,");
 
-                    insertValues.Append($" N'{propertyValue}' ,");
+                        insertValues.Append($" N'{propertyValue}' ,");
+                    }
                 }
-
+                
                 if (ExternalIdColumn == "ExternalId")
                 {
                     updateProperties.Append($" {ExternalIdColumn} = N'{entity.GetUniqueExternalId()}' ,");
 
-                    insertProperties.Append($" {ExternalIdColumn} ,");
+                    insertProperties.Append($" {ExternalIdColumn} , TargetId,");
 
                     insertValues.Append($" N'{entity.GetUniqueExternalId()}' ,");
+                    insertValues.Append($" NULL, ");
+
+                    whereValue.Append($"{ExternalIdColumn} =  '{entity.GetUniqueExternalId()}'");
+
                 }
                 else
                 {
@@ -124,9 +151,14 @@ namespace Extractor
                     updateProperties.Append($" {ExternalIdColumn.Split(',')[1]} = N'{entity.GetUniqueExternalId().Split(',')[1]}' ,");
 
                     insertProperties.Append($" {ExternalIdColumn} ,");
+                    insertProperties.Append($" {TargetIdColumn}, ");
 
                     insertValues.Append($" N'{entity.GetUniqueExternalId().Split(',')[0]}' ,");
                     insertValues.Append($" N'{entity.GetUniqueExternalId().Split(',')[1]}' ,");
+                    insertValues.Append($" NULL, NULL, ");
+
+                    whereValue.Append($"{ExternalIdColumn.Split(',')[0]} = '{entity.GetUniqueExternalId().Split(',')[0]}' ");
+                    whereValue.Append($" AND {ExternalIdColumn.Split(',')[1]} = '{entity.GetUniqueExternalId().Split(',')[1]}' ");
                 }
 
 
@@ -134,17 +166,18 @@ namespace Extractor
                 {
                     query = $"UPDATE {IntermediateEntityName} " +
                             $"SET {updateProperties} ToBeDeleted = 0 " +
-                            $"WHERE ExternalId =  '{entity.GetUniqueExternalId()}' ";
+                            $"WHERE {whereValue} ";
                 }
                 else
                 {
                     query = $"INSERT INTO {IntermediateEntityName} " +
-                            $"({insertProperties}  TargetId, ToBeDeleted) " +
-                            $"VALUES({insertValues} , NULL, 0, 0)";
+                            $"({insertProperties}  ToBeDeleted,IsDeleted) " +
+                            $"VALUES({insertValues} 0, 0)";
                 }
 
                 using var updateCommand = new SqlCommand(query, myCon);
                 updateCommand.ExecuteNonQuery();
+                Console.WriteLine($"{IntermediateEntityName}: {iteration++}");
             }
 
             myCon.Close();
