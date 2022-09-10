@@ -71,7 +71,9 @@ namespace BusinessRulesEngine
 
             Logger.Logger.Log(BatchId, domainEnum.ToString(), validationLogs);
 
-            return migratedObjects.Where(c => c.ValidationLogs.Count == 0).ToList();
+            migratedObjects.ForEach(m => { if (m.ValidationLogs.Count > 0) SetThePropertyValue(m, "ToBeDeleted", true); });
+
+            return migratedObjects;
         }
     }
 }

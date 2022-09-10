@@ -82,6 +82,8 @@ namespace Extractor
         private void WriteEntities(List<MigratedObject> entities, string IntermediateEntityName, List<string> properties, string ExternalIdColumn = "ExternalId", string TargetIdColumn = "TargetId")
         {
             Console.WriteLine($"Transforming: {IntermediateEntityName}");
+            entities = entities.Where(e => e.ValidationLogs.Count == 0).ToList();
+
             using var myCon =
                 new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
 

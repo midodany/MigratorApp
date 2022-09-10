@@ -10,6 +10,7 @@ namespace DataMigrator.Entities
         public int? TargetStudentId { set; get; }
         public int? TargetCourseId { set; get; }
         public bool ToBeDeleted { set; get; }
+        public bool IsDeleted { set; get; }
 
         public override string GetUniqueExternalId()
         {

@@ -28,6 +28,7 @@ namespace DataMigrator
         private void MigrateCourses(string BatchId)
         {
             var properties = new List<string>() { "Id", "Title", "Description" };
+
             var courseIntermediate = GetIntermediateEnteties<CourseIntermediate>(BatchId, "Course", properties);
 
             properties.RemoveAt(0);
@@ -48,7 +49,8 @@ namespace DataMigrator
         private void MigrateStudents(string BatchId)
         {
             var properties = new List<string>() { "Id", "FirstName", "LastName", "Email", "BirthDate", "Gender" };
-            var studentIntermediate = GetIntermediateEnteties<StudentIntermediate>(BatchId, "Student", properties);
+            var relations = GetRelationObjectByEntityName("StudentCourse", "ExternalStudentId", "ExternalCourseId");
+            var studentIntermediate = GetIntermediateEnteties<StudentIntermediate>(BatchId, "Student", properties, relations: relations);
 
             properties.RemoveAt(0);
 
@@ -65,7 +67,7 @@ namespace DataMigrator
         }
 
         private List<T> GetIntermediateEnteties<T>(string BatchId, string IntermediateEntityName, List<string> properties,
-            string ExternalIdColumn = "ExternalId", string TargetIdColumn = "TargetId", string[,] tablesToJoinColumns = null) where T : MigratedObject, new()
+            string ExternalIdColumn = "ExternalId", string TargetIdColumn = "TargetId", string[,] tablesToJoinColumns = null, List<RelationObject> relations = null) where T : MigratedObject, new()
         {
             using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
             var ExternalIdColumnNames = ExternalIdColumn.Split(',');
@@ -88,7 +90,7 @@ namespace DataMigrator
                     selectPropertiesQuery = $"{string.Join(",", properties.Select(p => "a." + p))},";
             }
 
-            var query = $"SELECT {selectPropertiesQuery} {string.Join(",", ExternalIdColumnNames.Select(c => "a." + c))}, {targetIdSelectQuery}, a.ToBeDeleted " +
+            var query = $"SELECT {selectPropertiesQuery} {string.Join(",", ExternalIdColumnNames.Select(c => "a." + c))}, {targetIdSelectQuery}, a.ToBeDeleted, a.IsDeleted " +
                         $"FROM {IntermediateEntityName} a " +
                         $"{joinQuery} " +
                         $"Where (a.ToBeDeleted = 0 OR a.IsDeleted = 0) {whereJoinQuery}";
@@ -124,11 +126,18 @@ namespace DataMigrator
                 }
 
                 CommonFunctions.SetThePropertyValue(entity, "ToBeDeleted", row["ToBeDeleted"]);
+                CommonFunctions.SetThePropertyValue(entity, "IsDeleted", row["IsDeleted"]);
                 entity.MigrationId = entity.GetUniqueExternalId();
                 entities.Add(entity);
             }
 
+            
             var ValidatedEntities = _engineValidator.ValidateMigratedObjects(entities.ToList<MigratedObject>(), IntermediateEntityName, DomainEnum.Target);
+
+            if(relations != null)
+            {
+                ValidatedEntities = _engineValidator.ValidateRelationForMigratedObject(ValidatedEntities, IntermediateEntityName, relations);
+            }
 
             var acceptedEntities = CommonFunctions.ApplyFilter(BatchId, DomainEnum.Target, ValidatedEntities);
 
@@ -143,8 +152,8 @@ namespace DataMigrator
             List<string> MigratedIdColumnsList = MigratedIdColumn.Split(',').ToList();
 
             var toBeDeletedEntities = inputEntities.Where(e => bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
-            var toBeAddedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && !int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
-            var toBeUpdatedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _)).ToList();
+            var toBeAddedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && (!int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _) || bool.Parse(CommonFunctions.GetThePropertyValue(e, "IsDeleted"))) ).ToList();
+            var toBeUpdatedEntities = inputEntities.Where(e => !bool.Parse(CommonFunctions.GetThePropertyValue(e, "ToBeDeleted")) && int.TryParse(CommonFunctions.GetThePropertyValue(e, TargetIdColumnsList[0]), out _) && !bool.Parse(CommonFunctions.GetThePropertyValue(e, "IsDeleted"))).ToList();
 
 
             using var myCon =
@@ -192,9 +201,10 @@ namespace DataMigrator
                 insertQuery = $" ({string.Join(',', properties)}) ";
                 outputId = "output INSERTED.Id V ";
             }
-
+            var iterator = 1;
             foreach (var entity in toBeAddedEntities)
             {
+                Console.WriteLine($"Adding {IntermediateEntityName}: {iterator++}");
                 StringBuilder insertValues = new StringBuilder(" VALUES(");
                 if(properties != null)
                 {
@@ -236,8 +246,10 @@ namespace DataMigrator
 
             if (MigratedIdColumnsList.Count == 1)
             {
+                iterator = 1;
                 foreach (var entity in toBeUpdatedEntities)
                 {
+                    Console.WriteLine($"Updating {IntermediateEntityName}: {iterator++}");
                     StringBuilder updatequery = new StringBuilder();
                     foreach (var property in properties)
                     {
@@ -262,7 +274,7 @@ namespace DataMigrator
                 foreach (var entity in toBeDeletedEntities)
                 {
                     var query = $"UPDATE {IntermediateEntityName} " +
-                                "SET IsDeleted = 1 " +
+                                "SET IsDeleted = 1, ToBeDeleted = 1 " +
                                 $"WHERE {TargetIdColumn} = {CommonFunctions.GetThePropertyValue(entity, TargetIdColumn)} ";
                     using var myCommand = new SqlCommand(query, intermediateCon);
                     myCommand.ExecuteNonQuery();
@@ -288,7 +300,7 @@ namespace DataMigrator
                 intermediateCon.Open();
 
                 var query = $"UPDATE {IntermediateEntityName} " +
-                            "SET IsDeleted = 1 ";
+                            "SET IsDeleted = 1 ,ToBeDeleted = 1 ";
                 using var myCommand = new SqlCommand(query, intermediateCon);
                 myCommand.ExecuteNonQuery();
 
@@ -310,6 +322,30 @@ namespace DataMigrator
                 intermediateCon.Close();
             }
 
+        }
+
+        private List<RelationObject> GetRelationObjectByEntityName(string entityName,string sourceColumnName, string targetColumnName)
+        {
+            using var myCon = new SqlConnection(_connectionStringManager.GetConnectionString("IntermediateConnectionString"));
+            string query = $"SELECT {sourceColumnName},{targetColumnName} FROM {entityName} ";
+
+            var objResult = new DataTable();
+            myCon.Open();
+            using var myCommand = new SqlCommand(query, myCon);
+            var myReader = myCommand.ExecuteReader();
+            objResult.Load(myReader);
+
+            myReader.Close();
+            myCon.Close();
+
+            var relationRules = (from DataRow dr in objResult.Rows
+                                 select new RelationObject
+                                 {
+                                     RelationTable = entityName,
+                                     RelationSourceId = dr[sourceColumnName].ToString(),
+                                     RelationTargetId = dr[targetColumnName].ToString()
+                                 }).ToList();
+            return relationRules;
         }
 
     }
