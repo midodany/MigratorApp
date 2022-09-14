@@ -1,0 +1,48 @@
+<div class="panel-container">
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="!this.ruleChanged"
+      (click)="onSave()"
+    >
+      Save
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="router.navigate(['/ActiveRules'])"
+    >
+      Active Rules
+    </button>
+    <div class="row">
+      <div class="block">
+        <label>
+          Entity:
+          <input type="text" [(ngModel)]="entityFilter" />
+        </label>
+      </div>
+      <div class="block">
+        <label>
+          Relation Table:
+          <input type="text" [(ngModel)]="relationFilter" />
+        </label>
+      </div>
+    </div>
+    <div class="cards">
+      <div
+        *ngFor="
+          let relationRule of this.relationRules
+            | filterBR: entityFilter:'RelationSourceTable'
+            | filterBR: relationFilter:'RelationTable'
+        "
+        class="card shadow-1"
+      >
+        <app-relattion-card
+          [BusinessRule]="relationRule"
+          (onRuleChange)="this.onRuleChange()"
+        >
+        </app-relattion-card>
+      </div>
+    </div>
+  </div>
+  
