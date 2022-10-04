@@ -5,7 +5,7 @@ import { Routes } from "@angular/router";
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 import { ControlPanelComponent } from "./control-panel/control-panel.component";
-import { OptionCardComponent } from "./control-panel/option-card/option-card.component";
+import { OptionCardComponent } from "./option-card/option-card.component";
 import { FilterBR } from "./pipes/filterBR.pipe";
 import { HttpClientModule } from "@angular/common/http";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
@@ -14,6 +14,7 @@ import {MatSelectModule} from '@angular/material/select';
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatTabsModule } from "@angular/material/tabs";
 import { NewRuleComponent } from "./new-rule/new-rule.component";
 import { MigrationLogComponent } from "./migration-log/migration-log.component";
 import { MatTableModule } from "@angular/material/table";
@@ -21,6 +22,7 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { RelationRuleComponent } from './relation-rule/relation-rule.component';
 import { RelattionCardComponent } from './relation-rule/relattion-card/relattion-card.component';
+import { ActiveRuleComponent } from './active-rule/active-rule.component';
 
 const appRoutes: Routes = [];
 
@@ -34,6 +36,7 @@ const appRoutes: Routes = [];
     MigrationLogComponent,
     RelationRuleComponent,
     RelattionCardComponent,
+    ActiveRuleComponent,
   ],
   imports: [
     BrowserModule,
@@ -45,6 +48,7 @@ const appRoutes: Routes = [];
     MatInputModule,
     FormsModule,
     MatButtonModule,
+    MatTabsModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,

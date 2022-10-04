@@ -1,0 +1,51 @@
+<div class="panel-container">
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="!this.ruleChanged"
+      (click)="onSave()"
+    >
+      Save
+    </button>
+    <div class="row">
+      <div class="block">
+        <label>
+          Origin:
+          <select [(ngModel)]="selectedValue" (change)="onOriginChange()">
+            <option *ngFor="let o of origins" [ngValue]="o">{{o.name}}</option>
+          </select>
+        </label>
+        
+      </div>
+      <div class="block">
+        <label>
+          Entity:
+          <input type="text"  [(ngModel)]="entityFilter"/> 
+        </label>
+        
+      </div>
+      <div class="block">
+        <label>
+          Property:
+          <input type="text"  [(ngModel)]="propertyFilter"/> 
+        </label>
+      </div>
+    </div>
+    <div class="cards">
+      <div
+        *ngFor="
+          let businessRule of this.businessRules
+            | filterBR: entityFilter:'EntityName'
+            | filterBR: propertyFilter:'PropertyName'
+        "
+        class="card shadow-1"
+      >
+        <app-option-card
+          [BusinessRule]="businessRule"
+          (onRuleChange)="this.onRuleChange()"
+        >
+        </app-option-card>
+      </div>
+    </div>
+  </div>
+  

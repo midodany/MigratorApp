@@ -1,19 +1,12 @@
 <div class="panel-container">
-  <button
-    mat-raised-button
-    color="primary"
-    (click)="router.navigate(['/ActiveRules'])"
-  >
-    Rules
-  </button>
 
   <div class="row">
     <div class="block">
       <label>
-        Origin:
+        Batches:
         <select [(ngModel)]="selectedValue" (change)="onBatchChange()">
           <option *ngFor="let b of batches" [ngValue]="b">
-            {{ b.BatchId + " : " + b.StartRunTime }}
+            {{ (b.StartRunTime | date: 'd/M, h:mm a') + "   -   " + b.BatchId }}
           </option>
         </select>
       </label>
