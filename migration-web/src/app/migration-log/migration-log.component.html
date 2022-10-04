@@ -48,7 +48,7 @@
 
       <ng-container matColumnDef="PropertyName">
         <mat-header-cell *matHeaderCellDef mat-sort-header>
-          Property Name
+          Property/Relation
         </mat-header-cell>
         <mat-cell *matCellDef="let row"> {{ row.PropertyName }} </mat-cell>
       </ng-container>
@@ -63,7 +63,7 @@
       </ng-container>
 
       <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: displayedColumns"> </mat-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns" (click)="onRowClick(row)"> </mat-row>
     </mat-table>
 
     <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]"></mat-paginator>

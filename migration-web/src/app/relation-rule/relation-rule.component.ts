@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { ControlPanelService } from '../control-panel/control-panel.service';
 import { RelationRuleService } from './relation-rule.service';
 
 @Component({
@@ -9,7 +10,7 @@ import { RelationRuleService } from './relation-rule.service';
 })
 export class RelationRuleComponent implements OnInit {
 
-  constructor(private relationRuleService :RelationRuleService, public router: Router) { }
+  constructor(private relationRuleService :RelationRuleService, private controlPanelService: ControlPanelService, public router: Router) { }
 
   public relationRules = [];
   public ruleChanged = false;
@@ -19,6 +20,12 @@ export class RelationRuleComponent implements OnInit {
   ngOnInit(): void {
     this.relationRuleService.getConfig().subscribe(data => {
       this.relationRules = data;
+      
+      this.entityFilter = this.controlPanelService.EntityName;
+      this.relationFilter = this.controlPanelService.PropertyRelationName;
+
+      this.controlPanelService.EntityName = "";
+      this.controlPanelService.PropertyRelationName = "";
     })
   }
 

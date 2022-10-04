@@ -78,7 +78,9 @@ namespace Logger
                     ValidationMessage = dr["ValidationMessage"].ToString(),
                     TableName = dr["TableName"].ToString(),
                     PropertyName = dr["PropertyName"].ToString(),
-                    objectId = dr["objectId"].ToString()
+                    objectId = dr["objectId"].ToString(),
+                    IsActive = dr.Field<bool>("IsActive"),
+                    RuleType = dr.Field<int>("RuleType")
                 }).ToList();
             return batches;
         }

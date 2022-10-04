@@ -9,4 +9,8 @@ import { catchError, retry } from 'rxjs/operators';
 export class ControlPanelService {
 
   constructor(private http: HttpClient) { }
+
+  public EntityName: string = "";
+  public PropertyRelationName: string = "";
+  public Domain: string = "";
 }

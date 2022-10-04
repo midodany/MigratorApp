@@ -12,5 +12,7 @@ namespace Logger
         public string Domain { set; get; }
         public  string TableName { set; get; }
         public  string PropertyName { set; get; }
+        public bool IsActive { set; get; }
+        public int? RuleType { set; get; }
     }
 }

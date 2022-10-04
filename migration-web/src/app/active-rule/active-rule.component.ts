@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActiveRuleService } from './active-rule.service';
 import { Router } from '@angular/router';
+import { ControlPanelService } from '../control-panel/control-panel.service';
 
 @Component({
   selector: 'app-active-rule',
@@ -19,13 +20,22 @@ export class ActiveRuleComponent implements OnInit {
     {id:2, name: 'Target'}
   ]
 
-  constructor(private activeRuleService: ActiveRuleService, public router: Router) { }
+  constructor(private activeRuleService: ActiveRuleService, private controlPanelService: ControlPanelService, public router: Router) { }
 
   ngOnInit(): void {
-    this.selectedValue = this.origins[0];
+    this.selectedValue = this.controlPanelService.Domain == "Target" ? this.origins[1] : this.origins[0];
+
     this.activeRuleService.getConfig(this.selectedValue.name).subscribe(data => {
       this.businessRules = data;
     })
+    
+    this.entityFilter = this.controlPanelService.EntityName;
+    this.propertyFilter = this.controlPanelService.PropertyRelationName;
+
+
+    this.controlPanelService.EntityName = "";
+    this.controlPanelService.PropertyRelationName = "";
+    this.controlPanelService.Domain = "";
   }
 
   onOriginChange():void {

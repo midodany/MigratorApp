@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild } from "@angular/core";
+import { Component, OnInit, Output, ViewChild, EventEmitter  } from "@angular/core";
 import { Router } from "@angular/router";
 import { MigrationLogService } from "./migration-log.service";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort } from "@angular/material/sort";
+import { ControlPanelService } from "../control-panel/control-panel.service";
 
 @Component({
   selector: "app-migration-log",
@@ -20,6 +21,7 @@ export class MigrationLogComponent implements OnInit {
   ];
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
+  @Output() rowClicked = new EventEmitter<any>();
   dataSource: MatTableDataSource<any>;
   public selectedValue = null;
   batches = [];
@@ -27,6 +29,7 @@ export class MigrationLogComponent implements OnInit {
 
   constructor(
     private migrationLogService: MigrationLogService,
+    private controlPanelService: ControlPanelService,
     public router: Router
   ) {}
 
@@ -51,6 +54,13 @@ export class MigrationLogComponent implements OnInit {
       this.dataSource.paginator = this.paginator;
       this.dataSource.sort = this.sort;
     });
+  }
+
+  onRowClick(row: any) {
+    this.controlPanelService.EntityName = row.TableName;
+    this.controlPanelService.PropertyRelationName = row.PropertyName;
+    this.controlPanelService.Domain = row.Domain;
+    this.rowClicked.emit(row);
   }
 
   getBatches(): void {

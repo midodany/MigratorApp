@@ -35,3 +35,6 @@ button {
   overflow: auto;
   max-height: 500px;
 }
+mat-row {
+  cursor: pointer;
+}

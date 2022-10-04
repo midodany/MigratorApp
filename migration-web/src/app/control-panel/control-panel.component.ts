@@ -7,6 +7,19 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ControlPanelComponent{
 
+  selected = 0;
+
+  rowClicked(row: any) {
+
+    console.log(row.IsActive,row.TableName,row.PropertyName,row.Domain,row.RuleType);
+
+    if(row.RuleType == 2) {
+      this.selected = 2;
+    }
+    else {
+      this.selected = row.IsActive ? 0 : 1;
+    }
+  }
 
   constructor() { }
 
